@@ -1,0 +1,102 @@
+[
+  {
+    "time": "11:58",
+    "user": "1+1",
+    "ai": null
+  },
+  {
+    "time": "11:58",
+    "user": "1+1",
+    "ai": null
+  },
+  {
+    "time": "11:58",
+    "user": "1+1",
+    "ai": null
+  },
+  {
+    "time": "11:58",
+    "user": "müzik aç",
+    "ai": null
+  },
+  {
+    "time": "12:00",
+    "user": "çık",
+    "ai": "çıkış"
+  },
+  {
+    "time": "12:02",
+    "user": "müzik aç",
+    "ai": "Tamam 👍 bunu öğrendim."
+  },
+  {
+    "time": "12:02",
+    "user": "müzik aç",
+    "ai": "spotify aç (öğrenilmiş) çalıştırıldı."
+  },
+  {
+    "time": "12:02",
+    "user": "şarkı aç",
+    "ai": "Tamam 👍 bunu öğrendim."
+  },
+  {
+    "time": "12:02",
+    "user": "şarkı aç",
+    "ai": "spotify aç (öğrenilmiş) çalıştırıldı."
+  },
+  {
+    "time": "12:03",
+    "user": "hesap makinesi aç",
+    "ai": "Tamam 👍 bunu öğrendim."
+  },
+  {
+    "time": "12:03",
+    "user": "hesap makinesi aç",
+    "ai": "hesap makinesi aç (öğrenilmiş) çalıştırıldı."
+  },
+  {
+    "time": "12:05",
+    "user": "resim aç",
+    "ai": "Tamam 👍 bunu öğrendim."
+  },
+  {
+    "time": "12:05",
+    "user": "resim aç",
+    "ai": "fotoğraflar aç (öğrenilmiş) çalıştırıldı."
+  },
+  {
+    "time": "12:06",
+    "user": "resim aç",
+    "ai": "fotoğraflar aç (öğrenilmiş) çalıştırıldı."
+  },
+  {
+    "time": "12:06",
+    "user": "çık",
+    "ai": "çıkış"
+  },
+  {
+    "time": "12:07",
+    "user": "resim aç",
+    "ai": "fotoğraflar aç (öğrenilmiş) çalıştırıldı."
+  },
+  {
+    "time": "12:07",
+    "user": "resim aç",
+    "ai": "fotoğraflar aç (öğrenilmiş) çalıştırıldı."
+  },
+  {
+    "time": "12:07",
+    "user": "müzik aç",
+    "ai": "spotify aç (öğrenilmiş) çalıştırıldı."
+  },
+  {
+    "time": "12:09",
+    "user": "çık",
+    "ai": "çıkış"
+  },
+  {
+    "time": "11:37",
+    "user": "bye",
+    "ai": "çıkış"
+  }
+]

@@ -1,0 +1,11 @@
+{
+  "open_chrome": ["chrome aç","google aç"],
+  "open_vscode": ["vs aç","vscode aç"],
+  "open_notepad": ["not defteri aç"],
+  "time": ["saat kaç"],
+  "weather_today": ["hava durumu","hava nasıl"],
+  "weather_week": ["haftalık hava durumu"],
+  "chat_greetings": ["merhaba","selam","nasılsın"],
+  "chat_farewell": ["görüşürüz","hoşça kal"],
+  "questions_open": ["nedir","kimdir","nerede","nasıl çalışır"]
+}
