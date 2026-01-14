@@ -1,4 +1,4 @@
-# 🤖 AlpAy AI – Öğrenebilen Sohbet Asistanı
+# 🤖 AlpAy AI
 
 **AlpAy AI**, Python ile geliştirilmiş, kullanıcıyla etkileşime girerek yeni bilgiler öğrenebilen ve bu bilgileri hafızasında tutabilen modüler bir yapay zeka asistanı prototipidir.
 
