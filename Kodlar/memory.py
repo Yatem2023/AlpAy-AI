@@ -2,6 +2,12 @@ import json
 from datetime import datetime
 
 FILE = "memory.json"
+import json
+from datetime import datetime
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent
+FILE = BASE_DIR / "memory.json"
 
 def load():
     try:
