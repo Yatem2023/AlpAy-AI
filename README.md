@@ -32,6 +32,18 @@ AlpAy-AI/
 │   └── ml_data.json
 │
 ├── requirements.txt
+├── Kodlar/
+│   ├── main.py
+│   ├── intent_model.py
+│   ├── actions.py
+│   ├── learner.py
+│   ├── memory.py
+│   ├── knowledge.py
+│   ├── rules.json
+│   ├── learned_commands.json
+│   └── memory.json
+├── web site/
+│   └── index.html
 └── README.md
 ```
 
@@ -42,6 +54,7 @@ AlpAy-AI/
 ```bash
 git clone https://github.com/kullanici-adi/AlpAy-AI.git
 cd AlpAy-AI
+cd AlpAy-AI/Kodlar
 pip install -r requirements.txt
 python main.py
 ```
@@ -61,6 +74,8 @@ Başarılıysa:
 
 - Kuralları kontrol eder (`rules.py`)
 - Öğrenilmiş veriye bakar (`ml_data.json`)
+- Kuralları kontrol eder (`Kodlar/rules.json`)
+- Öğrenilmiş veriye ve kullanıcı hafızasına bakar (`Kodlar/learned_commands.json`, `Kodlar/memory.json`)
 - Bilmediğini kullanıcıdan öğrenir
 - Bir dahaki sefere hatırlar 🎉
 
