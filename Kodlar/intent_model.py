@@ -39,8 +39,6 @@ import json
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 
-from learner import load_learned
-
 
 class IntentModel:
     def __init__(self):
@@ -52,9 +50,7 @@ class IntentModel:
 
         self.vectorizer = TfidfVectorizer()
         self.model = LogisticRegression(max_iter=1000)
-
         self.is_trained = False
-        self._last_learned_snapshot = None
 
     def _build_dataset(self):
         x_data, y_data = [], []
@@ -64,15 +60,10 @@ class IntentModel:
                 x_data.append(phrase)
                 y_data.append(intent)
 
-        learned = load_learned()
-        for command, learned_response in learned.items():
-            x_data.append(command)
-            y_data.append(learned_response)
-
-        return x_data, y_data, learned
+        return x_data, y_data
 
     def train(self):
-        x_data, y_data, learned = self._build_dataset()
+        x_data, y_data = self._build_dataset()
 
         if not x_data:
             self.is_trained = False
@@ -80,13 +71,10 @@ class IntentModel:
 
         x_vec = self.vectorizer.fit_transform(x_data)
         self.model.fit(x_vec, y_data)
-
         self.is_trained = True
-        self._last_learned_snapshot = learned
 
     def _ensure_trained(self):
-        current_learned = load_learned()
-        if (not self.is_trained) or (current_learned != self._last_learned_snapshot):
+        if not self.is_trained:
             self.train()
 
     def predict(self, text):
