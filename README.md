@@ -52,7 +52,7 @@ AlpAy-AI/
 ## 🛠️ Kurulum
 
 ```bash
-git clone https://github.com/kullanici-adi/AlpAy-AI.git
+git clone https://github.com/yatem2023/AlpAy-AI.git
 cd AlpAy-AI
 cd AlpAy-AI/Kodlar
 pip install -r requirements.txt
