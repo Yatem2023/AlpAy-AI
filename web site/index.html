@@ -1,10 +1,6 @@
 <!DOCTYPE html>
-<html lang="en">
 <html lang="tr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AlpAy AI</title>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AlpAy AI Web</title>
@@ -18,9 +14,7 @@
       --accent: #22c55e;
       --border: #334155;
     }
-
     * { box-sizing: border-box; }
-
     body {
       margin: 0;
       font-family: Inter, Arial, sans-serif;
@@ -30,155 +24,27 @@
       display: grid;
       grid-template-columns: 280px 1fr;
     }
-
-    .sidebar {
-      border-right: 1px solid var(--border);
-      background: rgba(15, 23, 42, 0.9);
-      padding: 20px;
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-weight: 700;
-      font-size: 18px;
-      margin-bottom: 20px;
-    }
-
-    .dot {
-      width: 12px;
-      height: 12px;
-      border-radius: 999px;
-      background: var(--accent);
-      box-shadow: 0 0 14px var(--accent);
-    }
-
-    .new-chat {
-      width: 100%;
-      border: 1px solid var(--border);
-      background: var(--panel-2);
-      color: var(--text);
-      padding: 10px 12px;
-      border-radius: 10px;
-      cursor: pointer;
-      margin-bottom: 18px;
-    }
-
-    .hint {
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.5;
-      margin-top: 8px;
-    }
-
-    .app {
-      display: grid;
-      grid-template-rows: auto 1fr auto;
-      min-width: 0;
-    }
-
-    .topbar {
-      padding: 18px 24px;
-      border-bottom: 1px solid var(--border);
-      backdrop-filter: blur(6px);
-      background: rgba(15, 23, 42, 0.5);
-    }
-
-    .title {
-      margin: 0;
-      font-size: 16px;
-      color: #cbd5e1;
-      font-weight: 600;
-    }
-
-    .chat {
-      overflow-y: auto;
-      padding: 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    .msg {
-      max-width: 900px;
-      width: 100%;
-      margin: 0 auto;
-      display: grid;
-      grid-template-columns: 34px 1fr;
-      gap: 12px;
-      align-items: start;
-    }
-
-    .avatar {
-      width: 34px;
-      height: 34px;
-      border-radius: 8px;
-      display: grid;
-      place-items: center;
-      font-size: 12px;
-      font-weight: 700;
-      color: #0b1220;
-      background: #94a3b8;
-    }
-
-    .msg.ai .avatar {
-      color: #052e16;
-      background: #4ade80;
-    }
-
-    .bubble {
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 12px 14px;
-      background: rgba(17, 24, 39, 0.75);
-      line-height: 1.6;
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
-
-    .msg.user .bubble {
-      background: #1e293b;
-    }
-
-    .composer-wrap {
-      padding: 16px 24px 20px;
-      border-top: 1px solid var(--border);
-      background: rgba(2, 6, 23, 0.55);
-    }
-
-    .composer {
-      max-width: 920px;
-      margin: 0 auto;
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 10px;
-    }
-
-    input {
-      width: 100%;
-      border: 1px solid var(--border);
-      background: var(--panel);
-      color: var(--text);
-      border-radius: 12px;
-      padding: 13px 14px;
-      font-size: 15px;
-    }
-
-    button.send {
-      border: 0;
-      background: var(--accent);
-      color: #052e16;
-      font-weight: 700;
-      padding: 0 18px;
-      border-radius: 12px;
-      cursor: pointer;
-    }
-
-    @media (max-width: 900px) {
-      body { grid-template-columns: 1fr; }
-      .sidebar { display: none; }
-    }
+    .sidebar { border-right: 1px solid var(--border); background: rgba(15, 23, 42, 0.9); padding: 20px; }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; margin-bottom: 20px; }
+    .dot { width: 12px; height: 12px; border-radius: 999px; background: var(--accent); box-shadow: 0 0 14px var(--accent); }
+    .new-chat { width: 100%; border: 1px solid var(--border); background: var(--panel-2); color: var(--text); padding: 10px 12px; border-radius: 10px; cursor: pointer; margin-bottom: 18px; }
+    .hint { color: var(--muted); font-size: 13px; line-height: 1.5; margin-top: 8px; }
+    .status { margin-top: 14px; font-size: 12px; color: var(--muted); }
+    .app { display: grid; grid-template-rows: auto 1fr auto; min-width: 0; }
+    .topbar { padding: 18px 24px; border-bottom: 1px solid var(--border); backdrop-filter: blur(6px); background: rgba(15, 23, 42, 0.5); }
+    .title { margin: 0; font-size: 16px; color: #cbd5e1; font-weight: 600; }
+    .chat { overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+    .msg { max-width: 900px; width: 100%; margin: 0 auto; display: grid; grid-template-columns: 34px 1fr; gap: 12px; align-items: start; }
+    .avatar { width: 34px; height: 34px; border-radius: 8px; display: grid; place-items: center; font-size: 12px; font-weight: 700; color: #0b1220; background: #94a3b8; }
+    .msg.ai .avatar { color: #052e16; background: #4ade80; }
+    .bubble { border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; background: rgba(17, 24, 39, 0.75); line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+    .msg.user .bubble { background: #1e293b; }
+    .composer-wrap { padding: 16px 24px 20px; border-top: 1px solid var(--border); background: rgba(2, 6, 23, 0.55); }
+    .composer { max-width: 920px; margin: 0 auto; display: grid; grid-template-columns: 1fr auto; gap: 10px; }
+    input { width: 100%; border: 1px solid var(--border); background: var(--panel); color: var(--text); border-radius: 12px; padding: 13px 14px; font-size: 15px; }
+    button.send { border: 0; background: var(--accent); color: #052e16; font-weight: 700; padding: 0 18px; border-radius: 12px; cursor: pointer; }
+    button.send:disabled { opacity: 0.6; cursor: wait; }
+    @media (max-width: 900px) { body { grid-template-columns: 1fr; } .sidebar { display: none; } }
   </style>
 </head>
 <body>
@@ -187,77 +53,94 @@
     <div class="brand"><span class="dot"></span> AlpAy AI</div>
     <button class="new-chat" id="newChatBtn">+ Yeni Sohbet</button>
     <div class="hint">
-      ChatGPT benzeri bu demo arayüz AlpAy AI için hazırlandı.
+      Gerçek backend bağlantılı web sohbet.
       <br /><br />
       Örnek mesajlar:
       <br />• merhaba
       <br />• saat kaç
       <br />• atatürk kimdir
     </div>
+    <div class="status" id="statusText">API: http://127.0.0.1:8000/api/chat</div>
   </aside>
 
   <main class="app">
-    <header class="topbar">
-      <p class="title">AlpAy AI • Web Chat</p>
-    </header>
-
+    <header class="topbar"><p class="title">AlpAy AI • Web Chat</p></header>
     <section class="chat" id="chat"></section>
-
     <footer class="composer-wrap">
       <form class="composer" id="chatForm">
         <input id="prompt" autocomplete="off" placeholder="AlpAy AI'ye bir şey yaz..." />
-        <button class="send" type="submit">Gönder</button>
+        <button class="send" type="submit" id="sendBtn">Gönder</button>
       </form>
     </footer>
   </main>
 
   <script>
+    const API_URL = 'http://127.0.0.1:8000/api/chat';
     const chat = document.getElementById('chat');
     const form = document.getElementById('chatForm');
     const promptInput = document.getElementById('prompt');
     const newChatBtn = document.getElementById('newChatBtn');
+    const sendBtn = document.getElementById('sendBtn');
+    const statusText = document.getElementById('statusText');
 
-    const welcome = 'Merhaba! Ben AlpAy AI.\nSana saat, genel bilgi ve basit komutlarda yardımcı olabilirim.';
+    const welcome = 'Merhaba! Ben AlpAy AI.\nArtık backend API ile konuşuyorum.';
 
     function addMessage(role, text) {
       const row = document.createElement('div');
       row.className = `msg ${role}`;
-      row.innerHTML = `
-        <div class="avatar">${role === 'ai' ? 'AI' : 'SEN'}</div>
-        <div class="bubble"></div>
-      `;
+      row.innerHTML = `<div class="avatar">${role === 'ai' ? 'AI' : 'SEN'}</div><div class="bubble"></div>`;
       row.querySelector('.bubble').textContent = text;
       chat.appendChild(row);
       chat.scrollTop = chat.scrollHeight;
+      return row;
     }
 
-    function aiReply(text) {
-      const q = text.toLowerCase().trim();
-      if (!q) return 'Bir mesaj yazabilirsin.';
-      if (q.includes('merhaba') || q.includes('selam')) return 'Merhaba! Nasılsın?';
-      if (q.includes('saat')) return `Şu an saat: ${new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}`;
-      if (q.includes('atatürk') && q.includes('kim')) return 'Mustafa Kemal Atatürk, Türkiye Cumhuriyeti’nin kurucusu ve ilk Cumhurbaşkanıdır.';
-      if (q.endsWith('?') || q.includes('kimdir') || q.includes('nedir')) return 'Bu soru için internet bağlantılı bilgi modülü ekleyebiliriz. İstersen bir sonraki adımda bunu bağlayalım.';
-      return 'Bunu anladım 👍 Bu arayüzü gerçek AlpAy AI backendine bağlayabiliriz.';
+    async function sendToBackend(text) {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.reply || 'Yanıt alınamadı.';
+    }
+
+    function setBusy(isBusy) {
+      sendBtn.disabled = isBusy;
+      promptInput.disabled = isBusy;
+      statusText.textContent = isBusy ? 'API ile konuşuluyor...' : `API: ${API_URL}`;
     }
 
     function resetChat() {
       chat.innerHTML = '';
       addMessage('ai', welcome);
+      promptInput.value = '';
       promptInput.focus();
     }
 
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const text = promptInput.value.trim();
       if (!text) return;
 
       addMessage('user', text);
       promptInput.value = '';
+      setBusy(true);
 
-      setTimeout(() => {
-        addMessage('ai', aiReply(text));
-      }, 260);
+      try {
+        const reply = await sendToBackend(text);
+        addMessage('ai', reply);
+      } catch (err) {
+        addMessage('ai', 'Backend bağlantısı kurulamadı. Önce `python Kodlar/backend.py` komutunu çalıştır.');
+      } finally {
+        setBusy(false);
+        promptInput.focus();
+      }
     });
 
     newChatBtn.addEventListener('click', resetChat);
