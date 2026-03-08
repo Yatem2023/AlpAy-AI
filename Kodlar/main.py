@@ -37,7 +37,7 @@ while True:
     intent, confidence = model.predict(user)
     print(f"DEBUG intent = {intent} | conf={confidence:.2f}")
 
-    if confidence < 0.70:
+    if confidence < 0.30:
         intent = None
 
     answer = None
@@ -79,3 +79,4 @@ while True:
 
     print("AI:", answer)
     remember(user, answer)
+
