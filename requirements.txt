@@ -1,3 +1,5 @@
 scikit-learn
 requests
 wikipedia
+flask
+gunicorn
