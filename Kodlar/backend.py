@@ -278,8 +278,3 @@ def run(host="0.0.0.0", port=8000):
 
 if __name__ == "__main__":
     run()
-
-api_key = auth_header.split(" ")[1]
-user_data = check_api_key(api_key)
-print("GELEN KEY:", api_key)
-print("JSON:", load_api_keys())
