@@ -74,77 +74,84 @@
     </footer>
   </main>
 
-  <script>
-    const API_URL = 'http://127.0.0.1:8000/api/chat';
-    const chat = document.getElementById('chat');
-    const form = document.getElementById('chatForm');
-    const promptInput = document.getElementById('prompt');
-    const newChatBtn = document.getElementById('newChatBtn');
-    const sendBtn = document.getElementById('sendBtn');
-    const statusText = document.getElementById('statusText');
+<script>
+  const API_URL = 'https://vespertine-derangedly-luciano.ngrok-free.dev/chat';
 
-    const welcome = 'Merhaba! Ben AlpAy AI.\nArtık backend API ile konuşuyorum.';
+  // 🔥 API KEY BURAYA
+  const API_KEY = "1001be16-478a-4327-97c3-002bd7b34af5";
 
-    function addMessage(role, text) {
-      const row = document.createElement('div');
-      row.className = `msg ${role}`;
-      row.innerHTML = `<div class="avatar">${role === 'ai' ? 'AI' : 'SEN'}</div><div class="bubble"></div>`;
-      row.querySelector('.bubble').textContent = text;
-      chat.appendChild(row);
-      chat.scrollTop = chat.scrollHeight;
-      return row;
-    }
+  const chat = document.getElementById('chat');
+  const form = document.getElementById('chatForm');
+  const promptInput = document.getElementById('prompt');
+  const newChatBtn = document.getElementById('newChatBtn');
+  const sendBtn = document.getElementById('sendBtn');
+  const statusText = document.getElementById('statusText');
 
-    async function sendToBackend(text) {
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text })
-      });
+  const welcome = 'Merhaba! Ben AlpAy AI.\nArtık backend API ile konuşuyorum.';
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
+  function addMessage(role, text) {
+    const row = document.createElement('div');
+    row.className = `msg ${role}`;
+    row.innerHTML = `<div class="avatar">${role === 'ai' ? 'AI' : 'SEN'}</div><div class="bubble"></div>`;
+    row.querySelector('.bubble').textContent = text;
+    chat.appendChild(row);
+    chat.scrollTop = chat.scrollHeight;
+    return row;
+  }
 
-      const data = await response.json();
-      return data.reply || 'Yanıt alınamadı.';
-    }
-
-    function setBusy(isBusy) {
-      sendBtn.disabled = isBusy;
-      promptInput.disabled = isBusy;
-      statusText.textContent = isBusy ? 'API ile konuşuluyor...' : `API: ${API_URL}`;
-    }
-
-    function resetChat() {
-      chat.innerHTML = '';
-      addMessage('ai', welcome);
-      promptInput.value = '';
-      promptInput.focus();
-    }
-
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const text = promptInput.value.trim();
-      if (!text) return;
-
-      addMessage('user', text);
-      promptInput.value = '';
-      setBusy(true);
-
-      try {
-        const reply = await sendToBackend(text);
-        addMessage('ai', reply);
-      } catch (err) {
-        addMessage('ai', 'Backend bağlantısı kurulamadı. Önce `python Kodlar/backend.py` komutunu çalıştır.');
-      } finally {
-        setBusy(false);
-        promptInput.focus();
-      }
+  async function sendToBackend(text) {
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${API_KEY}`  // 🔥 KRİTİK
+      },
+      body: JSON.stringify({ message: text })
     });
 
-    newChatBtn.addEventListener('click', resetChat);
-    resetChat();
-  </script>
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.reply || 'Yanıt alınamadı.';
+  }
+
+  function setBusy(isBusy) {
+    sendBtn.disabled = isBusy;
+    promptInput.disabled = isBusy;
+    statusText.textContent = isBusy ? 'API ile konuşuluyor...' : `API: ${API_URL}`;
+  }
+
+  function resetChat() {
+    chat.innerHTML = '';
+    addMessage('ai', welcome);
+    promptInput.value = '';
+    promptInput.focus();
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const text = promptInput.value.trim();
+    if (!text) return;
+
+    addMessage('user', text);
+    promptInput.value = '';
+    setBusy(true);
+
+    try {
+      const reply = await sendToBackend(text);
+      addMessage('ai', reply);
+    } catch (err) {
+      addMessage('ai', 'Hata: ' + err.message);
+    } finally {
+      setBusy(false);
+      promptInput.focus();
+    }
+  });
+
+  newChatBtn.addEventListener('click', resetChat);
+  resetChat();
+</script>
 </body>
 </html>

@@ -6,7 +6,7 @@ from knowledge import search_knowledge
 
 
 QUESTION_HINTS = ["kimdir", "nedir", "nerede", "ne zaman", "nasıl", "kaç", "hangi"]
-MIN_CONFIDENCE = 0.70
+MIN_CONFIDENCE = 0.30
 LOW_CONFIDENCE_SAFE_INTENTS = {"chat_greetings", "chat_farewell"}
 
 
@@ -96,4 +96,4 @@ while True:
             answer = "Öğrenmeden geçiyorum."
 
     print("AI:", answer)
-    remember(user, answer
+    remember(user, answer)

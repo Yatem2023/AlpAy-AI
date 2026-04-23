@@ -23,15 +23,6 @@ Kullanıcıdan gelen mesajlara göre cevap üretir, yeni soru–cevapları öğr
 
 ```
 AlpAy-AI/
-│
-├── main.py
-├── ai_engine.py
-├── trainer.py
-├── rules.py
-├── data/
-│   └── ml_data.json
-│
-├── requirements.txt
 ├── Kodlar/
 │   ├── main.py
 │   ├── intent_model.py
@@ -52,7 +43,7 @@ AlpAy-AI/
 ## 🛠️ Kurulum
 
 ```bash
-git clone https://github.com/yatem2023/AlpAy-AI.git
+git clone https://github.com/kullanici-adi/AlpAy-AI.git
 cd AlpAy-AI
 cd AlpAy-AI/Kodlar
 pip install -r requirements.txt
@@ -72,8 +63,7 @@ Başarılıysa:
 
 ## 🧠 Nasıl Çalışır?
 
-- Kuralları kontrol eder (`rules.py`)
-- Öğrenilmiş veriye bakar (`ml_data.json`)
+
 - Kuralları kontrol eder (`Kodlar/rules.json`)
 - Öğrenilmiş veriye ve kullanıcı hafızasına bakar (`Kodlar/learned_commands.json`, `Kodlar/memory.json`)
 - Bilmediğini kullanıcıdan öğrenir
@@ -97,3 +87,32 @@ AI • Arduino • IoT
 ---
 
 ⭐ Projeyi beğendiysen yıldızlamayı unutma
+
+
+## 🌐 Web Arayüz + Backend
+
+```bash
+# 1) Backend
+python Kodlar/backend.py
+
+# 2) Frontend (ayrı terminal)
+cd "web site"
+python -m http.server 4173
+```
+
+Sonra tarayıcıdan `http://127.0.0.1:4173` adresine git.
+
+
+## 💾 Otomatik Kaydet (Auto Commit)
+
+Repodaki değişiklikleri otomatik commit almak için:
+
+```bash
+python autosave_repo.py --interval 60
+```
+
+Tek seferlik kontrol/commit için:
+
+```bash
+python autosave_repo.py --once
+```

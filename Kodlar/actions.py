@@ -1,3 +1,4 @@
+from datetime import datetime
 import os, datetime, requests, re
 from app_discovery import discover_apps
 
@@ -33,3 +34,10 @@ def get_weather(text, mode):
         return requests.get(url, timeout=5).text
     except:
         return "Hava durumu alınamadı."
+
+
+from datetime import datetime
+
+def get_time():
+    now = datetime.now()
+    return now.strftime("%H:%M:%S")

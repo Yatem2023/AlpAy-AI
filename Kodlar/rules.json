@@ -7,5 +7,6 @@
   "weather_week": ["haftalık hava durumu"],
   "chat_greetings": ["merhaba","selam","nasılsın"],
   "chat_farewell": ["görüşürüz","hoşça kal"],
-  "questions_open": ["nedir","kimdir","nerede","nasıl çalışır"]
+  "questions_open": ["nedir","kimdir","nerede","nasıl çalışır"],
+  "knowledge": ["nedir","kimdir","nerede","nasıl"]
 }
