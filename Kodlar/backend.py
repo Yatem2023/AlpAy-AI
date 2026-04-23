@@ -1,293 +1,285 @@
 import json
-import os
-import uuid
-from datetime import datetime, timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-# =========================
-# SETTINGS
-# =========================
+import actions
+from intent_model import IntentModel
+from knowledge import search_knowledge
+from learner import get_learned
+from memory import remember
 
-HOST = "0.0.0.0"
-PORT = int(os.environ.get("PORT", 8000))
-DATA_FILE = "api_keys.json"
+import uuid
+import os
 
-FREE_LIMIT = 20
+# ================== API KEY SYSTEM ==================
 
-PLANS = {
-    "basic": {
-        "name": "Basic Premium",
-        "price": 29,
-        "limit": 1000,
-        "days": 30
-    },
-    "pro": {
-        "name": "Pro",
-        "price": 79,
-        "limit": -1,  # unlimited
-        "days": 30
-    },
-    "ultra": {
-        "name": "Ultra",
-        "price": 149,
-        "limit": -1,
-        "days": 30
-    }
-}
+API_KEYS_FILE = "api_keys.json"
+RATE_LIMIT = 100
 
-# =========================
-# DATABASE
-# =========================
 
-def load_data():
-    if not os.path.exists(DATA_FILE):
+
+def load_api_keys():
+    if not os.path.exists(API_KEYS_FILE):
         return {}
-    with open(DATA_FILE, "r", encoding="utf-8") as f:
+    with open(API_KEYS_FILE, "r", encoding="utf-8") as f:
         return json.load(f)
 
-def save_data(data):
-    with open(DATA_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
 
-# =========================
-# USER SYSTEM
-# =========================
+def save_api_keys(data):
+    with open(API_KEYS_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2)
 
-def create_key(username):
-    data = load_data()
 
+def create_api_key(username="user"):
+    data = load_api_keys()
     new_key = str(uuid.uuid4())
 
     data[new_key] = {
         "user": username,
-        "usage": 0,
-        "plan": "free",
-        "premium": False,
-        "expire": None,
-        "created": str(datetime.now())
+        "usage": 0
     }
 
-    save_data(data)
+    save_api_keys(data)
     return new_key
 
-def get_user(api_key):
-    data = load_data()
+
+def check_api_key(api_key):
+    data = load_api_keys()
     return data.get(api_key)
 
-def save_user(api_key, user_data):
-    data = load_data()
-    data[api_key] = user_data
-    save_data(data)
 
-def add_usage(api_key):
-    user = get_user(api_key)
+def increment_usage(api_key):
+    data = load_api_keys()
 
-    if user:
-        user["usage"] += 1
-        save_user(api_key, user)
+    if api_key in data:
+        data[api_key]["usage"] += 1
+        save_api_keys(data)
+        return data[api_key]["usage"]
 
-def premium_active(user):
-    if not user["premium"]:
-        return False
+    return None
 
-    if not user["expire"]:
-        return False
+def get_user_keys(username):
+    data = load_api_keys()
+    result = []
 
-    expire = datetime.fromisoformat(user["expire"])
+    for key, info in data.items():
+        if info["user"] == username:
+            result.append({
+                "key": key,
+                "usage": info["usage"]
+            })
 
-    if datetime.now() > expire:
-        user["premium"] = False
-        user["plan"] = "free"
-        return False
+    return result
 
-    return True
 
-# =========================
-# PREMIUM SYSTEM
-# =========================
+# ================== AI SYSTEM ==================
 
-def buy_plan(api_key, plan_name):
-    if plan_name not in PLANS:
-        return False, "Plan bulunamadı"
+QUESTION_HINTS = ["kimdir", "nedir", "nerede", "ne zaman", "nasıl", "hangi"]
 
-    user = get_user(api_key)
+MIN_CONFIDENCE = 0.30
+LOW_CONFIDENCE_SAFE_INTENTS = {"chat_greetings", "chat_farewell"}
+
+model = IntentModel()
+
+
+def extract_query(text):
+    keywords = ["nedir", "kimdir", "nerede", "nasıl", "ne zaman", "hangi"]
+    for k in keywords:
+        if k in text:
+            return text.replace(k, "").strip()
+    return text
+
+
+def looks_like_open_question(text):
+    normalized = text.lower().strip()
+    if normalized.endswith("?"):
+        return True
+    return any(hint in normalized for hint in QUESTION_HINTS)
+
+
+def generate_reply(user_text):
+    user = user_text.lower().strip()
 
     if not user:
-        return False, "API key geçersiz"
+        return "Bir mesaj yazabilirsin."
 
-    plan = PLANS[plan_name]
+    if "saat" in user:
+        return actions.get_time()
 
-    expire = datetime.now() + timedelta(days=plan["days"])
+    if "hava" in user:
+        return actions.get_weather(user, "today")
 
-    user["premium"] = True
-    user["plan"] = plan_name
-    user["expire"] = expire.isoformat()
-    user["usage"] = 0
+    learned = get_learned(user)
+    if learned:
+        return learned
 
-    save_user(api_key, user)
+    intent, confidence = model.predict(user)
 
-    return True, plan
+    if confidence < MIN_CONFIDENCE:
+        if intent in LOW_CONFIDENCE_SAFE_INTENTS:
+            pass
+        elif looks_like_open_question(user):
+            intent = "questions_open"
+        else:
+            intent = None
 
-# =========================
-# LIMIT SYSTEM
-# =========================
+    answer = None
 
-def can_use(user):
-    if premium_active(user):
-        plan = user["plan"]
+    if intent == "open_chrome":
+        answer = "Web sürümünde uygulama açma desteklenmiyor."
 
-        if plan == "basic":
-            return user["usage"] < 1000
+    elif intent == "open_vscode":
+        answer = "Web sürümünde uygulama açma desteklenmiyor."
 
-        if plan in ["pro", "ultra"]:
-            return True
+    elif intent == "open_notepad":
+        answer = "Web sürümünde uygulama açma desteklenmiyor."
 
-    return user["usage"] < FREE_LIMIT
+    elif intent == "time":
+        answer = actions.get_time()
 
-# =========================
-# AI RESPONSE
-# =========================
+    elif intent == "weather_today":
+        answer = actions.get_weather(user, "today")
 
-def generate_reply(msg, user):
-    text = msg.lower()
+    elif intent == "weather_week":
+        answer = actions.get_weather(user, "week")
 
-    if user["plan"] == "ultra":
-        return f"🔥 ULTRA AI CEVAP:\n'{msg}' için en güçlü cevap hazır."
+    elif intent == "chat_greetings":
+        answer = "Merhaba! Nasılsın?"
 
-    elif user["plan"] == "pro":
-        return f"⚡ PRO AI:\n{msg} hakkında gelişmiş cevap."
+    elif intent == "chat_farewell":
+        answer = "Görüşürüz 👋"
 
-    elif user["plan"] == "basic":
-        return f"💎 BASIC AI:\n{msg} hakkında premium cevap."
+    elif intent == "questions_open":
+        query = extract_query(user)
 
-    return f"🙂 FREE AI:\n{msg} hakkında normal cevap."
+        if len(query) < 2:
+            answer = "Sorunu biraz daha detaylandırabilir misin?"
+        else:
+            answer = search_knowledge(query)
 
-# =========================
-# API SERVER
-# =========================
+    if answer is None:
+        answer = "Bunu tam anlayamadım."
 
-class Handler(BaseHTTPRequestHandler):
+    remember(user, answer)
+    return answer
 
-    def send_json(self, code, data):
-        body = json.dumps(data, ensure_ascii=False).encode("utf-8")
 
-        self.send_response(code)
+# ================== API HANDLER ==================
+
+class AlpAyAPIHandler(BaseHTTPRequestHandler):
+
+    def _send_json(self, status_code, payload):
+        body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+        self.send_response(status_code)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.end_headers()
-
         self.wfile.write(body)
 
     def do_OPTIONS(self):
         self.send_response(204)
         self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.end_headers()
 
     def do_GET(self):
-
         if self.path == "/":
-            self.send_json(200, {"status": "AlpAy Premium API aktif 🚀"})
+            self._send_json(200, {"status": "AlpAy API çalışıyor 🚀"})
+
+        elif self.path == "/api/create-key":
+            new_key = create_api_key("web_user")
+            self._send_json(200, {"api_key": new_key})
 
         else:
-            self.send_json(404, {"error": "Not found"})
+            self._send_json(404, {"error": "Not found"})
 
+    # ✅ POST (asıl API)
     def do_POST(self):
 
-        content_length = int(self.headers.get("Content-Length", 0))
-        raw = self.rfile.read(content_length)
-
-        try:
-            data = json.loads(raw.decode("utf-8"))
-        except:
-            data = {}
-
-        # CREATE KEY
+        # 🔥 API KEY OLUŞTURMA (AUTH YOK)
         if self.path == "/api/create-key":
-            username = data.get("username", "user")
-            key = create_key(username)
+            content_length = int(self.headers.get("Content-Length", 0))
+            raw_body = self.rfile.read(content_length)
 
-            self.send_json(200, {
-                "api_key": key
-            })
+            try:
+                data = json.loads(raw_body.decode("utf-8"))
+                username = data.get("username", "user")
+            except:
+                username = "user"
+
+            new_key = create_api_key(username)
+            self._send_json(200, {"api_key": new_key})
             return
+        # 🔑 KULLANICI KEYLERİNİ GETİR
+        if self.path == "/api/my-keys":
+            content_length = int(self.headers.get("Content-Length", 0))
+            raw_body = self.rfile.read(content_length)
 
-        # AUTH
-        auth = self.headers.get("Authorization")
-
-        if not auth or not auth.startswith("Bearer "):
-            self.send_json(401, {"error": "API key gerekli"})
-            return
-
-        api_key = auth.split(" ")[1]
-
-        user = get_user(api_key)
-
-        if not user:
-            self.send_json(403, {"error": "Geçersiz key"})
-            return
-
-        # BUY PREMIUM
-        if self.path == "/api/buy-premium":
-
-            plan = data.get("plan", "")
-
-            ok, result = buy_plan(api_key, plan)
-
-            if ok:
-                self.send_json(200, {
-                    "success": True,
-                    "plan": result["name"],
-                    "price": result["price"],
-                    "expire_days": result["days"]
-                })
-            else:
-                self.send_json(400, {"error": result})
-
-            return
-
-        # PROFILE
-        if self.path == "/api/me":
-            self.send_json(200, user)
-            return
-
-        # CHAT
-        if self.path == "/api/chat":
-
-            if not can_use(user):
-                self.send_json(429, {
-                    "error": "Mesaj limitin doldu. Premium al 😎"
-                })
+            try:
+                data = json.loads(raw_body.decode("utf-8"))
+                username = data.get("username", "")
+            except:
+                self._send_json(400, {"error": "Invalid JSON"})
                 return
 
-            message = data.get("message", "")
-
-            add_usage(api_key)
-
-            reply = generate_reply(message, user)
-
-            self.send_json(200, {
-                "reply": reply,
-                "usage": user["usage"] + 1,
-                "plan": user["plan"]
-            })
+            keys = get_user_keys(username)
+            self._send_json(200, {"keys": keys})
             return
 
-        self.send_json(404, {"error": "Not found"})
+        # 🔐 AUTH
+        auth_header = self.headers.get("Authorization")
+
+        if not auth_header or not auth_header.startswith("Bearer "):
+            self._send_json(401, {"error": "API key gerekli"})
+            return
+
+        api_key = auth_header.split(" ")[1]
+        user_data = check_api_key(api_key)
+
+        if not user_data:
+            self._send_json(403, {"error": "Geçersiz API key"})
+            return
+
+        if user_data["usage"] >= RATE_LIMIT:
+            self._send_json(429, {"error": "Rate limit aşıldı"})
+            return
+
+        increment_usage(api_key)
+
+        # 💬 CHAT
+        if self.path == "/api/chat":
+            content_length = int(self.headers.get("Content-Length", 0))
+            raw_body = self.rfile.read(content_length)
+
+            try:
+                data = json.loads(raw_body.decode("utf-8"))
+                message = data.get("message", "")
+            except:
+                self._send_json(400, {"error": "Invalid JSON"})
+                return
+
+            reply = generate_reply(message)
+            self._send_json(200, {"reply": reply})
+            return
+
+        self._send_json(404, {"error": "Not found"})
 
 
-# =========================
-# START
-# =========================
+# ================== RUN ==================
 
-def run():
-    server = ThreadingHTTPServer((HOST, PORT), Handler)
-    print(f"AlpAy API running on {HOST}:{PORT}")
+def run(host="0.0.0.0", port=8000):
+    server = ThreadingHTTPServer((host, port), AlpAyAPIHandler)
+    print(f"AlpAy API running on http://{host}:{port}")
     server.serve_forever()
+
 
 if __name__ == "__main__":
     run()
+
+api_key = auth_header.split(" ")[1]
+user_data = check_api_key(api_key)
+print("GELEN KEY:", api_key)
+print("JSON:", load_api_keys())
