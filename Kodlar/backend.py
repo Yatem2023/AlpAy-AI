@@ -1,138 +1,144 @@
-# FULL CODER V6 - AlpAy AI
-# ChatGPT tarzı internet araştıran + kod yazan sistem
-
 import json
 import os
 import uuid
 import requests
+from datetime import datetime, timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-HOST = "0.0.0.0"
-PORT = int(os.environ.get("PORT", 8000))
+# =============================
+# SETTINGS
+# =============================
+DATA_FILE = "api_keys.json"
+FREE_LIMIT = 25
 
-API_KEYS_FILE = "api_keys.json"
-
-# =========================
-# API KEY SYSTEM
-# =========================
-
-def load_keys():
-    if not os.path.exists(API_KEYS_FILE):
+# =============================
+# FILE SYSTEM
+# =============================
+def load_data():
+    if not os.path.exists(DATA_FILE):
         return {}
 
-    with open(API_KEYS_FILE, "r", encoding="utf-8") as f:
+    with open(DATA_FILE, "r", encoding="utf-8") as f:
         return json.load(f)
 
-def save_keys(data):
-    with open(API_KEYS_FILE, "w", encoding="utf-8") as f:
+
+def save_data(data):
+    with open(DATA_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
 
-def create_key(username="user"):
-    data = load_keys()
+
+# =============================
+# USER SYSTEM
+# =============================
+def create_key(username):
+    data = load_data()
 
     key = str(uuid.uuid4())
 
     data[key] = {
         "user": username,
-        "usage": 0
+        "usage": 0,
+        "plan": "free",
+        "premium": False,
+        "expire": None,
+        "created": str(datetime.now())
     }
 
-    save_keys(data)
+    save_data(data)
     return key
 
-def check_key(key):
-    data = load_keys()
-    return data.get(key)
 
-def add_usage(key):
-    data = load_keys()
+def get_user(api_key):
+    data = load_data()
+    return data.get(api_key)
 
-    if key in data:
-        data[key]["usage"] += 1
-        save_keys(data)
 
-# =========================
-# INTERNET SEARCH
-# =========================
+def update_user(api_key, user):
+    data = load_data()
+    data[api_key] = user
+    save_data(data)
 
-def search_web(query):
+
+# =============================
+# PREMIUM SYSTEM
+# =============================
+def premium_active(user):
+    if not user.get("premium", False):
+        return False
+
+    if not user.get("expire"):
+        return False
+
+    expire = datetime.fromisoformat(user["expire"])
+
+    if datetime.now() > expire:
+        user["premium"] = False
+        user["plan"] = "free"
+        return False
+
+    return True
+
+
+def can_use(user):
+    plan = user.get("plan", "free")
+    usage = user.get("usage", 0)
+
+    if premium_active(user):
+
+        if plan == "basic":
+            return usage < 1000
+
+        if plan in ["pro", "ultra"]:
+            return True
+
+    return usage < FREE_LIMIT
+
+
+# =============================
+# AI FULL CODER
+# =============================
+def coder_ai(prompt):
+    query = prompt.replace(" ", "+")
+
     try:
-        url = "https://api.duckduckgo.com/"
-        params = {
-            "q": query,
-            "format": "json",
-            "no_html": 1
-        }
+        requests.get(
+            f"https://api.duckduckgo.com/?q={query}+python+code&format=json",
+            timeout=5
+        )
 
-        res = requests.get(url, params=params).json()
+        code = f'''# {prompt}
 
-        if res.get("AbstractText"):
-            return res["AbstractText"]
+def main():
+    print("{prompt} çalıştırıldı")
 
-        return "İnternette net sonuç bulunamadı."
+if __name__ == "__main__":
+    main()
+'''
+
+        return code
 
     except:
-        return "Arama hatası oluştu."
+        return "Kod üretilemedi."
 
-# =========================
-# CODE WRITER AI
-# =========================
 
-def write_code(prompt):
-    text = prompt.lower()
-
-    if "site" in text:
-        return """
-<!DOCTYPE html>
-<html>
-<head>
-<title>Web Site</title>
-</head>
-<body>
-<h1>Merhaba Dünya</h1>
-</body>
-</html>
-"""
-
-    elif "python" in text:
-        return """
-print("Merhaba Dünya")
-"""
-
-    elif "hesap makinesi" in text:
-        return """
-num1 = float(input("1. sayı: "))
-num2 = float(input("2. sayı: "))
-print(num1 + num2)
-"""
-
-    return f"{prompt} için kod araştırıldı. Yakında gelişmiş kod sistemi eklenecek."
-
-# =========================
+# =============================
 # CHAT AI
-# =========================
-
-def ai_reply(message):
-    text = message.lower()
+# =============================
+def ai_reply(msg):
+    text = msg.lower()
 
     if "merhaba" in text:
-        return "Merhaba 😎"
+        return "Merhaba 👋"
 
-    if "nasılsın" in text:
-        return "Harikayım 🚀"
+    if "kod" in text or "python" in text:
+        return coder_ai(msg)
 
-    if "kod" in text or "yaz" in text:
-        return write_code(message)
+    return "Bunu geliştiriyorum 😎"
 
-    if "kimdir" in text or "nedir" in text or "araştır" in text:
-        return search_web(message)
 
-    return "Bunu anlayamadım."
-
-# =========================
+# =============================
 # SERVER
-# =========================
-
+# =============================
 class Handler(BaseHTTPRequestHandler):
 
     def send_json(self, code, data):
@@ -140,10 +146,9 @@ class Handler(BaseHTTPRequestHandler):
 
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
-        self.send_header("Content-Length", str(len(body)))
         self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "*")
+        self.send_header("Content-Length", str(len(body)))
         self.end_headers()
 
         self.wfile.write(body)
@@ -151,76 +156,95 @@ class Handler(BaseHTTPRequestHandler):
     def do_OPTIONS(self):
         self.send_response(204)
         self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "*")
         self.end_headers()
 
     def do_GET(self):
 
         if self.path == "/":
-            self.send_json(200, {"status": "FULL CODER V6 aktif 🚀"})
-            return
+            self.send_json(200, {
+                "status": "FULL CODER V7 AKTIF 🔥"
+            })
 
-        if self.path == "/api/create-key":
+        elif self.path == "/api/create-key":
             key = create_key("web_user")
             self.send_json(200, {"api_key": key})
-            return
 
-        self.send_json(404, {"error": "Not found"})
+        else:
+            self.send_json(404, {"error": "not found"})
 
     def do_POST(self):
 
-        content_length = int(self.headers.get("Content-Length", 0))
-        raw = self.rfile.read(content_length)
-
-        try:
-            data = json.loads(raw.decode())
-        except:
-            data = {}
-
         if self.path == "/api/create-key":
-            username = data.get("username", "user")
+
+            length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(length)
+
+            try:
+                data = json.loads(body)
+                username = data["username"]
+            except:
+                username = "user"
+
             key = create_key(username)
+
             self.send_json(200, {"api_key": key})
             return
 
+        # AUTH
         auth = self.headers.get("Authorization")
 
-        if not auth or not auth.startswith("Bearer "):
+        if not auth:
             self.send_json(401, {"error": "API key gerekli"})
             return
 
-        key = auth.split(" ")[1]
-
-        user = check_key(key)
+        api_key = auth.replace("Bearer ", "")
+        user = get_user(api_key)
 
         if not user:
             self.send_json(403, {"error": "Geçersiz key"})
             return
 
+        if not can_use(user):
+            self.send_json(429, {"error": "Limit doldu"})
+            return
+
+        user["usage"] += 1
+        update_user(api_key, user)
+
+        # CHAT
         if self.path == "/api/chat":
 
-            msg = data.get("message", "")
+            length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(length)
 
-            add_usage(key)
+            try:
+                data = json.loads(body)
+                msg = data["message"]
+            except:
+                msg = ""
 
             reply = ai_reply(msg)
 
             self.send_json(200, {
-                "reply": reply
+                "reply": reply,
+                "usage": user["usage"],
+                "plan": user["plan"]
             })
+
             return
 
-        self.send_json(404, {"error": "Not found"})
+        self.send_json(404, {"error": "not found"})
 
-# =========================
-# START
-# =========================
 
+# =============================
+# RUN
+# =============================
 def run():
-    server = ThreadingHTTPServer((HOST, PORT), Handler)
-    print("FULL CODER V6 çalışıyor 🚀")
+    server = ThreadingHTTPServer(("0.0.0.0", 8000), Handler)
+    print("V7 running on port 8000")
     server.serve_forever()
+
 
 if __name__ == "__main__":
     run()
