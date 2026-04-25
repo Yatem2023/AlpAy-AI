@@ -267,6 +267,17 @@ class AlpAyAPIHandler(BaseHTTPRequestHandler):
 
         self._send_json(404, {"error": "Not found"})
 
+import requests
+
+def code_ai(prompt):
+    text = prompt.lower()
+
+    search = requests.get(
+        "https://api.duckduckgo.com/?q=" + text + "+code&format=json"
+    ).json()
+
+    return f"{prompt} için araştırıldı.\nKod hazırlanıyor..."
+
 
 # ================== RUN ==================
 
