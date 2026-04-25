@@ -2,18 +2,21 @@ import json
 import os
 import uuid
 import requests
-from datetime import datetime, timedelta
+import wikipedia
+from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-# =============================
+# ==========================
 # SETTINGS
-# =============================
+# ==========================
 DATA_FILE = "api_keys.json"
 FREE_LIMIT = 25
 
-# =============================
-# FILE SYSTEM
-# =============================
+wikipedia.set_lang("tr")
+
+# ==========================
+# DATABASE
+# ==========================
 def load_data():
     if not os.path.exists(DATA_FILE):
         return {}
@@ -27,9 +30,9 @@ def save_data(data):
         json.dump(data, f, indent=2)
 
 
-# =============================
+# ==========================
 # USER SYSTEM
-# =============================
+# ==========================
 def create_key(username):
     data = load_data()
 
@@ -59,76 +62,64 @@ def update_user(api_key, user):
     save_data(data)
 
 
-# =============================
+# ==========================
 # PREMIUM SYSTEM
-# =============================
-def premium_active(user):
-    if not user.get("premium", False):
-        return False
-
-    if not user.get("expire"):
-        return False
-
-    expire = datetime.fromisoformat(user["expire"])
-
-    if datetime.now() > expire:
-        user["premium"] = False
-        user["plan"] = "free"
-        return False
-
-    return True
-
-
+# ==========================
 def can_use(user):
-    plan = user.get("plan", "free")
-    usage = user.get("usage", 0)
-
-    if premium_active(user):
-
-        if plan == "basic":
-            return usage < 1000
-
-        if plan in ["pro", "ultra"]:
-            return True
-
-    return usage < FREE_LIMIT
+    return user.get("usage", 0) < FREE_LIMIT
 
 
-# =============================
-# AI FULL CODER
-# =============================
-def coder_ai(prompt):
-    query = prompt.replace(" ", "+")
-
+# ==========================
+# WIKIPEDIA AI
+# ==========================
+def wiki_ai(question):
     try:
-        requests.get(
-            f"https://api.duckduckgo.com/?q={query}+python+code&format=json",
-            timeout=5
-        )
+        result = wikipedia.summary(question, sentences=3)
+        return result
+    except:
+        return "Wikipedia üzerinde bilgi bulunamadı."
 
-        code = f'''# {prompt}
+
+# ==========================
+# FULL CODER AI
+# ==========================
+def coder_ai(prompt):
+    code = f'''# {prompt}
 
 def main():
-    print("{prompt} çalıştırıldı")
+    print("{prompt}")
 
 if __name__ == "__main__":
     main()
 '''
-
-        return code
-
-    except:
-        return "Kod üretilemedi."
+    return code
 
 
-# =============================
+# ==========================
 # CHAT AI
-# =============================
+# ==========================
 def ai_reply(msg):
     text = msg.lower()
 
     if "merhaba" in text:
         return "Merhaba 👋"
+
+    if any(x in text for x in [
+        "nedir",
+        "kimdir",
+        "nerede",
+        "ne zaman",
+        "nasıl"
+    ]):
+
+        soru = text.replace("nedir","")\
+                   .replace("kimdir","")\
+                   .replace("nerede","")\
+                   .replace("ne zaman","")\
+                   .replace("nasıl","")\
+                   .strip()
+
+        return wiki_ai(soru)
 
     if "kod" in text or "python" in text:
         return coder_ai(msg)
@@ -136,9 +127,9 @@ def ai_reply(msg):
     return "Bunu geliştiriyorum 😎"
 
 
-# =============================
+# ==========================
 # SERVER
-# =============================
+# ==========================
 class Handler(BaseHTTPRequestHandler):
 
     def send_json(self, code, data):
@@ -163,7 +154,7 @@ class Handler(BaseHTTPRequestHandler):
 
         if self.path == "/":
             self.send_json(200, {
-                "status": "FULL CODER V7 AKTIF 🔥"
+                "status": "FULL CODER + WIKI AKTIF 🔥"
             })
 
         elif self.path == "/api/create-key":
@@ -187,11 +178,9 @@ class Handler(BaseHTTPRequestHandler):
                 username = "user"
 
             key = create_key(username)
-
             self.send_json(200, {"api_key": key})
             return
 
-        # AUTH
         auth = self.headers.get("Authorization")
 
         if not auth:
@@ -212,7 +201,6 @@ class Handler(BaseHTTPRequestHandler):
         user["usage"] += 1
         update_user(api_key, user)
 
-        # CHAT
         if self.path == "/api/chat":
 
             length = int(self.headers.get("Content-Length", 0))
@@ -228,21 +216,19 @@ class Handler(BaseHTTPRequestHandler):
 
             self.send_json(200, {
                 "reply": reply,
-                "usage": user["usage"],
-                "plan": user["plan"]
+                "usage": user["usage"]
             })
-
             return
 
         self.send_json(404, {"error": "not found"})
 
 
-# =============================
+# ==========================
 # RUN
-# =============================
+# ==========================
 def run():
     server = ThreadingHTTPServer(("0.0.0.0", 8000), Handler)
-    print("V7 running on port 8000")
+    print("FULL CODER + WIKI running")
     server.serve_forever()
 
 
