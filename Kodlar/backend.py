@@ -121,7 +121,16 @@ def ai_reply(msg):
 
         return wiki_ai(soru)
 
-    if "kod" in text or "python" in text:
+    if any(x in text for x in [
+    "kod",
+    "python",
+    "yaz",
+    "oluştur",
+    "yap",
+    "hesap makinası",
+    "site",
+    "uygulama",
+    "bot"]):
         return coder_ai(msg)
 
     return "Bunu geliştiriyorum 😎"
