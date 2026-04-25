@@ -1,103 +1,114 @@
 import json
 import os
 import uuid
+import requests
 import wikipedia
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-# ==========================
+# =========================
 # SETTINGS
-# ==========================
-DATA_FILE = "api_keys.json"
+# =========================
+PORT = 8000
+DATA_FILE = "users.json"
 LIMIT = 100
-
 wikipedia.set_lang("tr")
 
-# ==========================
+# =========================
 # DATABASE
-# ==========================
-def load_data():
+# =========================
+def load_db():
     if not os.path.exists(DATA_FILE):
         return {}
     with open(DATA_FILE, "r", encoding="utf-8") as f:
         return json.load(f)
 
-def save_data(data):
+def save_db(data):
     with open(DATA_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
 
-# ==========================
+# =========================
 # USER SYSTEM
-# ==========================
+# =========================
 def create_key(username="user"):
-    data = load_data()
-
+    db = load_db()
     key = str(uuid.uuid4())
 
-    data[key] = {
+    db[key] = {
         "user": username,
         "usage": 0,
+        "memory": [],
         "plan": "free"
     }
 
-    save_data(data)
+    save_db(db)
     return key
 
 def get_user(key):
-    data = load_data()
-    return data.get(key)
+    return load_db().get(key)
 
-def update_user(key, user):
-    data = load_data()
-    data[key] = user
-    save_data(data)
+def save_user(key, user):
+    db = load_db()
+    db[key] = user
+    save_db(db)
 
-# ==========================
+# =========================
+# MEMORY
+# =========================
+def remember(user, text):
+    user["memory"].append(text)
+    user["memory"] = user["memory"][-10:]
+
+# =========================
 # WIKI AI
-# ==========================
-def wiki_ai(q):
+# =========================
+def wiki_ai(query):
     try:
-        return wikipedia.summary(q, sentences=3)
+        return wikipedia.summary(query, sentences=3)
     except:
         return "Bilgi bulunamadı."
 
-# ==========================
-# SMART CODER V8
-# ==========================
-def coder_ai(prompt):
-    text = prompt.lower()
+# =========================
+# IMAGE AI
+# =========================
+def image_ai(prompt):
+    return f"🎨 Görsel hazırlanıyor: {prompt}"
 
-    if "hesap" in text:
+# =========================
+# CODER AI
+# =========================
+def coder_ai(prompt):
+    t = prompt.lower()
+
+    if "hesap" in t:
         return '''
 # Hesap Makinası
 
-s1 = float(input("1. sayı: "))
-islem = input("İşlem (+ - * /): ")
-s2 = float(input("2. sayı: "))
+a = float(input("1. sayı: "))
+op = input("İşlem (+,-,*,/): ")
+b = float(input("2. sayı: "))
 
-if islem == "+":
-    print(s1 + s2)
-elif islem == "-":
-    print(s1 - s2)
-elif islem == "*":
-    print(s1 * s2)
-elif islem == "/":
-    print(s1 / s2)
+if op == "+":
+    print(a+b)
+elif op == "-":
+    print(a-b)
+elif op == "*":
+    print(a*b)
+elif op == "/":
+    print(a/b)
 '''
 
-    elif "site" in text or "html" in text:
+    if "site" in t:
         return '''
 <!DOCTYPE html>
 <html>
-<head>
-<title>Site</title>
-</head>
+<head><title>Site</title></head>
 <body>
 <h1>Merhaba Dünya</h1>
 </body>
 </html>
 '''
 
-    elif "discord" in text or "bot" in text:
+    if "discord" in t or "bot" in t:
         return '''
 import discord
 
@@ -110,32 +121,37 @@ async def on_ready():
 client.run("TOKEN")
 '''
 
-    return f'''
-# {prompt}
+    return f"# {prompt}\nprint('Kod hazır')"
 
-print("Kod hazır")
-'''
-
-# ==========================
-# AI CHAT
-# ==========================
-def ai_reply(msg):
+# =========================
+# MAIN AI
+# =========================
+def ai_reply(msg, user):
     text = msg.lower()
+
+    remember(user, msg)
 
     if "merhaba" in text:
         return "Merhaba 👋"
 
+    if "beni hatırla" in text:
+        return "Seni hafızama aldım 😎"
+
+    if "hafıza" in text:
+        return "Son mesajların: " + ", ".join(user["memory"][-5:])
+
     if any(x in text for x in [
         "nedir","kimdir","nerede","nasıl","ne zaman"
     ]):
-        soru = text.replace("nedir","") \
-                   .replace("kimdir","") \
-                   .replace("nerede","") \
-                   .replace("nasıl","") \
-                   .replace("ne zaman","") \
-                   .strip()
+        q = text.replace("nedir","").replace("kimdir","") \
+                .replace("nerede","").replace("nasıl","") \
+                .replace("ne zaman","").strip()
+        return wiki_ai(q)
 
-        return wiki_ai(soru)
+    if any(x in text for x in [
+        "logo","wallpaper","tasarla","afiş","görsel"
+    ]):
+        return image_ai(msg)
 
     if any(x in text for x in [
         "kod","python","yaz","oluştur","yap",
@@ -143,11 +159,11 @@ def ai_reply(msg):
     ]):
         return coder_ai(msg)
 
-    return "Bunu anlayamadım 😎"
+    return "Bunu geliştiriyorum 😎"
 
-# ==========================
+# =========================
 # SERVER
-# ==========================
+# =========================
 class Handler(BaseHTTPRequestHandler):
 
     def send_json(self, code, data):
@@ -159,7 +175,6 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Headers", "*")
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
-
         self.wfile.write(body)
 
     def do_OPTIONS(self):
@@ -171,7 +186,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
 
         if self.path == "/":
-            self.send_json(200, {"status": "V8 SMART AI AKTIF 🔥"})
+            self.send_json(200, {"status": "V9 ULTRA ACTIVE 🔥"})
 
         elif self.path == "/api/create-key":
             key = create_key("web_user")
@@ -184,11 +199,11 @@ class Handler(BaseHTTPRequestHandler):
 
         auth = self.headers.get("Authorization")
 
-        if not auth:
+        if not auth or not auth.startswith("Bearer "):
             self.send_json(401, {"error": "API key gerekli"})
             return
 
-        key = auth.replace("Bearer ", "")
+        key = auth.split(" ")[1]
         user = get_user(key)
 
         if not user:
@@ -200,20 +215,20 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         user["usage"] += 1
-        update_user(key, user)
 
         if self.path == "/api/chat":
 
             length = int(self.headers.get("Content-Length", 0))
-            body = self.rfile.read(length)
+            raw = self.rfile.read(length)
 
             try:
-                data = json.loads(body)
+                data = json.loads(raw.decode())
                 msg = data["message"]
             except:
                 msg = ""
 
-            reply = ai_reply(msg)
+            reply = ai_reply(msg, user)
+            save_user(key, user)
 
             self.send_json(200, {
                 "reply": reply,
@@ -223,12 +238,12 @@ class Handler(BaseHTTPRequestHandler):
 
         self.send_json(404, {"error": "not found"})
 
-# ==========================
+# =========================
 # RUN
-# ==========================
+# =========================
 def run():
-    server = ThreadingHTTPServer(("0.0.0.0", 8000), Handler)
-    print("V8 SMART AI RUNNING")
+    server = ThreadingHTTPServer(("0.0.0.0", PORT), Handler)
+    print("V9 FULL BACKEND RUNNING 🔥")
     server.serve_forever()
 
 if __name__ == "__main__":
