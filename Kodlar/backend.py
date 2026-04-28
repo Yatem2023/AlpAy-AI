@@ -11,7 +11,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 PORT = 8000
 DB_FILE = "users.json"
 LIMIT = 500
-HF_TOKEN = "BURAYA_HUGGINGFACE_TOKEN"
+HF_TOKEN = "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"
 wikipedia.set_lang("tr")
 
 # =========================
