@@ -80,7 +80,7 @@ def internet_search(query):
         return None
 
 def generate_image(prompt):
-    API_URL = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0"
+    API_URL = "https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5"
     headers = {"Authorization": "Bearer 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"}
 
     try:
@@ -90,19 +90,17 @@ def generate_image(prompt):
             json={"inputs": prompt}
         )
 
-        # 🔥 DEBUG
         print("STATUS:", response.status_code)
 
-        # ❌ MODEL YÜKLENİYOR
         if response.status_code == 503:
-            return "⏳ Model yükleniyor, biraz sonra tekrar dene."
+            return "⏳ Model yükleniyor, tekrar dene."
 
-        # ❌ HATA MESAJI VARSA
+        # JSON hata kontrol
         if "application/json" in response.headers.get("content-type", ""):
-            print("JSON HATA:", response.text)
+            print("HATA:", response.text)
             return "Görsel üretilemedi 😢"
 
-        # ✅ GERÇEK IMAGE GELDİ
+        # image kaydet
         with open("image.png", "wb") as f:
             f.write(response.content)
 
@@ -111,7 +109,6 @@ def generate_image(prompt):
     except Exception as e:
         print("ERR:", e)
         return "Hata oluştu"
-
 # 🔥 ANA AI (EN ÖNEMLİ YER)
 def generate_reply(message):
     msg = message.lower()
