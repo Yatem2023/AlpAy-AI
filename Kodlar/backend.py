@@ -81,7 +81,7 @@ def internet_search(query):
 
 def generate_image(prompt):
     API_URL = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2"
-    headers = {"Authorization": "Bearer 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"}
+    headers = {"Authorization": "Bearer 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"}
 
     try:
         response = requests.post(
