@@ -90,19 +90,22 @@ def generate_image(prompt):
             json={"inputs": prompt}
         )
 
-        if response.status_code == 200:
-            # image binary döner → bunu kaydetmen lazım
-            filename = "image.png"
-            with open(filename, "wb") as f:
-                f.write(response.content)
+        # 🔥 MODEL YÜKLENİYORSA BEKLE
+        if response.status_code == 503:
+            return "⏳ Model yükleniyor, 10 saniye sonra tekrar dene."
 
-            return "Sunucuya kaydedildi: /image.png"
-
-        else:
+        if response.status_code != 200:
+            print("HATA:", response.text)
             return "Görsel üretilemedi 😢"
 
+        # ✅ RESİMİ KAYDET
+        with open("image.png", "wb") as f:
+            f.write(response.content)
+
+        return "https://alpay-ai.onrender.com/image.png"
+
     except Exception as e:
-        print(e)
+        print("ERR:", e)
         return "Hata oluştu"
 
 
