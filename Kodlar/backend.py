@@ -174,12 +174,12 @@ class Handler(BaseHTTPRequestHandler):
         else:
             self.send_json(404, {"error": "not found"})
         if self.path == "/image.png":
-        with open("image.png", "rb") as f:
-            self.send_response(200)
-            self.send_header("Content-type", "image/png")
-            self.end_headers()
-            self.wfile.write(f.read())
-        return
+            with open("image.png", "rb") as f:
+                self.send_response(200)
+                self.send_header("Content-type", "image/png")
+                self.end_headers()
+                self.wfile.write(f.read())
+            return
 
     def do_POST(self):
 
