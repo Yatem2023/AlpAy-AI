@@ -81,7 +81,9 @@ def internet_search(query):
 
 def generate_image(prompt):
     API_URL = "https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5"
-    headers = {"Authorization": "Bearer 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"}
+    headers = {
+        "Authorization": "Bearer hf_xxxxxxxx"
+    }
 
     try:
         response = requests.post(
@@ -95,12 +97,10 @@ def generate_image(prompt):
         if response.status_code == 503:
             return "⏳ Model yükleniyor, tekrar dene."
 
-        # JSON hata kontrol
         if "application/json" in response.headers.get("content-type", ""):
             print("HATA:", response.text)
             return "Görsel üretilemedi 😢"
 
-        # image kaydet
         with open("image.png", "wb") as f:
             f.write(response.content)
 
