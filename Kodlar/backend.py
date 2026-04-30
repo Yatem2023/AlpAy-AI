@@ -82,7 +82,7 @@ def internet_search(query):
 def generate_image(prompt):
     API_URL = "https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5"
     headers = {
-        "Authorization": "Bearer hf_xxxxxxxx"
+        "Authorization": "Bearer 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"
     }
 
     try:
