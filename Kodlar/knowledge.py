@@ -1,15 +1,18 @@
 import wikipedia
 
-wikipedia.set_lang("tr")
-
 def search_knowledge(query):
     try:
-        results = wikipedia.search(query)
-        if not results:
-            return "Bilgi bulamadım."
+        wikipedia.set_lang("tr")
 
-        page = wikipedia.page(results[0])
-        return page.summary[:100000000000]
+        # query temizleme
+        q = query.replace("nedir", "").replace("kimdir", "").strip()
+
+        if not q:
+            return None
+
+        result = wikipedia.summary(q, sentences=2)
+        return result
 
     except Exception as e:
-        return "Bilgi alınırken hata oluştu."
+        print("Wiki hata:", e)
+        return None
