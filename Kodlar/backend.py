@@ -108,6 +108,7 @@ def generate_reply(message):
         return net
 
     # 🔥 SON ÇARE (HER ZAMAN CEVAP)
+    # 🔥 SON ÇARE
     wiki = search_knowledge(msg)
     if wiki:
         return wiki
