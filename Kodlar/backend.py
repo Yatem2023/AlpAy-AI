@@ -99,9 +99,8 @@ def generate_reply(message):
 
     # wiki soruları (ZORUNLU)
     if any(x in msg for x in ["nedir", "kimdir", "ne"]):
-        wiki = search_knowledge(msg)
-        if wiki:
-            return wiki
+        clean = msg.replace("nedir","").replace("kimdir","").replace("ne","").strip()
+        wiki = search_knowledge(clean)
 
     # internet
     net = internet_search(msg)
