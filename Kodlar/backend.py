@@ -4,12 +4,12 @@ import uuid
 import os
 import requests
 import datetime
+from knowledge import search_knowledge
 
-# ================== CONFIG ==================
 API_KEYS_FILE = "api_keys.json"
 RATE_LIMIT = 200
 
-# ================== FILE ==================
+# ================= API =================
 
 def load_api_keys():
     if not os.path.exists(API_KEYS_FILE):
@@ -21,17 +21,13 @@ def save_api_keys(data):
     with open(API_KEYS_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
 
-# ================== SELF HEALING ==================
-
 def check_api_key(api_key):
     data = load_api_keys()
 
     if api_key not in data:
-        print("🔥 Yeni key oluşturuldu:", api_key)
         data[api_key] = {
-            "user": "auto_user",
-            "usage": 0,
-            "plan": "free"
+            "user": "auto",
+            "usage": 0
         }
         save_api_keys(data)
 
@@ -43,47 +39,27 @@ def increment_usage(api_key):
         data[api_key]["usage"] += 1
         save_api_keys(data)
 
-# ================== AI CORE ==================
-
-def wiki_search(query):
-    try:
-        url = f"https://tr.wikipedia.org/api/rest_v1/page/summary/{query}"
-        r = requests.get(url).json()
-        return r.get("extract", "Bilgi bulunamadı.")
-    except:
-        return "Wiki hatası."
-
-def internet_search(query):
-    try:
-        url = f"https://api.duckduckgo.com/?q={query}&format=json"
-        data = requests.get(url).json()
-        return data.get("AbstractText", "Sonuç bulunamadı.")
-    except:
-        return "İnternet hatası."
+# ================= AI =================
 
 def generate_code(prompt):
     text = prompt.lower()
 
-    if "hesap makinası" in text:
-        return """# Python hesap makinesi
+    if "hesap" in text:
+        return """# Hesap Makinesi
 def hesapla():
-    a = float(input("Sayı 1: "))
+    a = float(input("Sayı1: "))
     op = input("İşlem (+ - * /): ")
-    b = float(input("Sayı 2: "))
+    b = float(input("Sayı2: "))
 
-    if op == "+":
-        print(a + b)
-    elif op == "-":
-        print(a - b)
-    elif op == "*":
-        print(a * b)
-    elif op == "/":
-        print(a / b)
+    if op == "+": print(a + b)
+    elif op == "-": print(a - b)
+    elif op == "*": print(a * b)
+    elif op == "/": print(a / b)
 
 hesapla()
 """
 
-    if "website" in text or "site" in text:
+    if "site" in text:
         return """<!DOCTYPE html>
 <html>
 <head><title>Site</title></head>
@@ -93,16 +69,23 @@ hesapla()
 </html>
 """
 
-    return "# Kod üretiliyor..."
+    return "# Kod oluşturulamadı"
 
-# ================== MAIN AI ==================
+def internet_search(query):
+    try:
+        url = f"https://api.duckduckgo.com/?q={query}&format=json"
+        data = requests.get(url).json()
+        return data.get("AbstractText", None)
+    except:
+        return None
 
+# 🔥 ANA AI (EN ÖNEMLİ YER)
 def generate_reply(message):
     msg = message.lower()
 
     # selam
     if "merhaba" in msg:
-        return "Merhaba! 😎"
+        return "Merhaba 😎"
 
     # saat
     if "saat" in msg:
@@ -110,19 +93,29 @@ def generate_reply(message):
 
     # kod
     if "kod" in msg or "yaz" in msg:
-        return generate_code(message)
+        code = generate_code(message)
+        if code:
+            return code
 
-    # wiki soruları
-    if any(x in msg for x in ["nedir", "kimdir", "ne", "hangi"]):
-        return wiki_search(msg.replace("nedir","").replace("kimdir",""))
+    # wiki soruları (ZORUNLU)
+    if any(x in msg for x in ["nedir", "kimdir", "ne"]):
+        wiki = search_knowledge(msg)
+        if wiki:
+            return wiki
 
     # internet
-    if "ara" in msg or "bul" in msg:
-        return internet_search(msg)
+    net = internet_search(msg)
+    if net:
+        return net
 
-    return "Bunu geliştiriyorum 😎"
+    # 🔥 SON ÇARE (HER ZAMAN CEVAP)
+    wiki = search_knowledge(msg)
+    if wiki:
+        return wiki
 
-# ================== API ==================
+    return "Bilmiyorum ama öğreniyorum 😎"
+
+# ================= SERVER =================
 
 class Handler(BaseHTTPRequestHandler):
 
@@ -147,19 +140,12 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path == "/":
-            self.send_json(200, {"status": "AlpAy AI V13 çalışıyor 🚀"})
-
-        elif self.path == "/api/create-key":
-            key = str(uuid.uuid4())
-            check_api_key(key)
-            self.send_json(200, {"api_key": key})
-
+            self.send_json(200, {"status": "AI çalışıyor 🚀"})
         else:
             self.send_json(404, {"error": "not found"})
 
     def do_POST(self):
 
-        # AUTH
         auth = self.headers.get("Authorization")
 
         if auth and auth.startswith("Bearer "):
@@ -170,7 +156,7 @@ class Handler(BaseHTTPRequestHandler):
         user = check_api_key(api_key)
 
         if user["usage"] >= RATE_LIMIT:
-            self.send_json(429, {"error": "rate limit"})
+            self.send_json(429, {"error": "limit"})
             return
 
         increment_usage(api_key)
@@ -181,26 +167,26 @@ class Handler(BaseHTTPRequestHandler):
         try:
             data = json.loads(body.decode("utf-8"))
         except:
-            self.send_json(400, {"error": "bad json"})
+            self.send_json(400, {"error": "json"})
             return
 
         if self.path == "/api/chat":
-            message = data.get("message", "")
-            reply = generate_reply(message)
+            msg = data.get("message", "")
+            reply = generate_reply(msg)
 
             self.send_json(200, {
                 "reply": reply,
-                "api_key": api_key
+                "key": api_key
             })
             return
 
         self.send_json(404, {"error": "not found"})
 
-# ================== RUN ==================
+# ================= RUN =================
 
 def run():
     server = ThreadingHTTPServer(("0.0.0.0", 8000), Handler)
-    print("🚀 AlpAy AI V13 çalışıyor")
+    print("🚀 AI hazır")
     server.serve_forever()
 
 if __name__ == "__main__":
