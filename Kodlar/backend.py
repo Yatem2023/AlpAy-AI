@@ -78,9 +78,7 @@ def internet_search(query):
         return data.get("AbstractText", None)
     except:
         return None
-if any(x in msg for x in ["çiz", "görsel", "resim", "afiş", "logo"]):
-    image_url = generate_image(message)
-    return f"🎨 Görsel hazır:\n{image_url}"
+
 
 # 🔥 ANA AI (EN ÖNEMLİ YER)
 def generate_reply(message):
@@ -99,6 +97,9 @@ def generate_reply(message):
         code = generate_code(message)
         if code:
             return code
+    if any(x in msg for x in ["çiz", "görsel", "resim", "afiş", "logo"]):
+        image_url = generate_image(message)
+        return f"🎨 Görsel hazır:\n{image_url}"
 
     # wiki soruları (ZORUNLU)
     if any(x in msg for x in ["nedir", "kimdir", "ne"]):
