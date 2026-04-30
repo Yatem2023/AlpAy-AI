@@ -79,6 +79,32 @@ def internet_search(query):
     except:
         return None
 
+def generate_image(prompt):
+    API_URL = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2"
+    headers = {"Authorization": "Bearer BURAYA_HUGGINGFACE_TOKEN"}
+
+    try:
+        response = requests.post(
+            API_URL,
+            headers=headers,
+            json={"inputs": prompt}
+        )
+
+        if response.status_code == 200:
+            # image binary döner → bunu kaydetmen lazım
+            filename = "image.png"
+            with open(filename, "wb") as f:
+                f.write(response.content)
+
+            return "Sunucuya kaydedildi: /image.png"
+
+        else:
+            return "Görsel üretilemedi 😢"
+
+    except Exception as e:
+        print(e)
+        return "Hata oluştu"
+
 
 # 🔥 ANA AI (EN ÖNEMLİ YER)
 def generate_reply(message):
