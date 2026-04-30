@@ -4,15 +4,17 @@ def search_knowledge(query):
     try:
         wikipedia.set_lang("tr")
 
-        # query temizleme
-        q = query.replace("nedir", "").replace("kimdir", "").strip()
+        q = query.replace("nedir","").replace("kimdir","").strip()
 
         if not q:
             return None
 
-        result = wikipedia.summary(q, sentences=2)
-        return result
+        return wikipedia.summary(q, sentences=2)
 
-    except Exception as e:
-        print("Wiki hata:", e)
-        return None
+    except:
+        try:
+            # 🔥 fallback EN (çok önemli)
+            wikipedia.set_lang("en")
+            return wikipedia.summary(q, sentences=2)
+        except:
+            return None
