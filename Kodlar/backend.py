@@ -1,351 +1,175 @@
 import json
-import os
-import uuid
-import requests
-import wikipedia
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+import uuid
+import os
 
-# =========================
-# SETTINGS
-# =========================
-PORT = 8000
-DB_FILE = "users.json"
-LIMIT = 500
-HF_TOKEN = "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"
-wikipedia.set_lang("tr")
+# ================== CONFIG ==================
+API_KEYS_FILE = "api_keys.json"
+RATE_LIMIT = 100
 
-# =========================
-# DATABASE
-# =========================
-def load_db():
-    if not os.path.exists(DB_FILE):
+# ================== FILE SYSTEM ==================
+
+def load_api_keys():
+    if not os.path.exists(API_KEYS_FILE):
         return {}
-
-    with open(DB_FILE, "r", encoding="utf-8") as f:
+    with open(API_KEYS_FILE, "r", encoding="utf-8") as f:
         return json.load(f)
 
-def save_db(data):
-    with open(DB_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
+def save_api_keys(data):
+    with open(API_KEYS_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2)
 
-# =========================
-# USER SYSTEM
-# =========================
-def create_key(username="user"):
-    db = load_db()
+# ================== SELF HEALING KEY SYSTEM ==================
 
-    key = str(uuid.uuid4())
+def check_api_key(api_key):
+    data = load_api_keys()
 
-    db[key] = {
-        "user": username,
+    # 🔥 KEY YOKSA OTOMATİK OLUŞTUR
+    if api_key not in data:
+        print("⚠️ Yeni key oluşturuldu:", api_key)
+
+        data[api_key] = {
+            "user": "auto_user",
+            "usage": 0,
+            "plan": "free"
+        }
+
+        save_api_keys(data)
+
+    return data[api_key]
+
+def increment_usage(api_key):
+    data = load_api_keys()
+
+    if api_key in data:
+        data[api_key]["usage"] += 1
+        save_api_keys(data)
+        return data[api_key]["usage"]
+
+    return 0
+
+def create_api_key():
+    data = load_api_keys()
+
+    new_key = str(uuid.uuid4())
+
+    data[new_key] = {
+        "user": "web_user",
         "usage": 0,
-        "plan": "free",
-        "memory": [],
-        "last_topic": ""
+        "plan": "free"
     }
 
-    save_db(db)
-    return key
+    save_api_keys(data)
 
-def get_user(key):
-    return load_db().get(key)
+    return new_key
 
-def save_user(key, user):
-    db = load_db()
-    db[key] = user
-    save_db(db)
+# ================== AI RESPONSE ==================
 
-# =========================
-# MEMORY
-# =========================
-def remember(user, text):
-    user["memory"].append(text)
-    user["memory"] = user["memory"][-15:]
+def generate_reply(message):
+    msg = message.lower()
 
-# =========================
-# WIKI
-# =========================
-def wiki_ai(query):
-    try:
-        return wikipedia.summary(query, sentences=3)
-    except:
-        return "Bilgi bulunamadı."
+    if "merhaba" in msg:
+        return "Merhaba! 😎"
 
-# =========================
-# IMAGE AI (GERÇEK)
-# =========================
-def image_ai(prompt):
-    url = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0"
+    if "saat" in msg:
+        import datetime
+        return str(datetime.datetime.now())
 
-    headers = {
-        "Authorization": f"Bearer {HF_TOKEN}"
-    }
+    if "hesap makinası" in msg:
+        return """# Basit hesap makinesi
+def hesapla():
+    a = float(input("Sayı 1: "))
+    b = float(input("Sayı 2: "))
+    print("Toplam:", a + b)
 
-    payload = {
-        "inputs": prompt
-    }
-
-    r = requests.post(url, headers=headers, json=payload)
-
-    if r.status_code == 200:
-        filename = "image.png"
-
-        with open(filename, "wb") as f:
-            f.write(r.content)
-
-        return {
-            "type": "image",
-            "url": "/image.png",
-            "prompt": prompt
-        }
-
-    return {
-        "type": "text",
-        "reply": "Görsel üretilemedi."
-    }
-
-# =========================
-# CODER AI
-# =========================
-def coder_ai(text):
-
-    t = text.lower()
-
-    if "hesap" in t:
-        return """
-# Hesap Makinesi
-
-a = float(input("1. sayı: "))
-b = float(input("2. sayı: "))
-islem = input("+, -, *, / : ")
-
-if islem == "+":
-    print(a+b)
-elif islem == "-":
-    print(a-b)
-elif islem == "*":
-    print(a*b)
-elif islem == "/":
-    print(a/b)
+hesapla()
 """
 
-    if "site" in t:
-        return """
-<!DOCTYPE html>
-<html>
-<head>
-<title>Site</title>
-</head>
-<body>
-<h1>Merhaba</h1>
-</body>
-</html>
-"""
+    return "Bunu geliştiriyorum 😎"
 
-    return "# Kod oluşturuldu"
+# ================== API ==================
 
-# =========================
-# NORMAL CHAT
-# =========================
-def chat_ai(text):
-    t = text.lower()
-
-    if "merhaba" in t:
-        return "Merhaba 👋"
-
-    if "nasılsın" in t:
-        return "Harikayım 😎"
-
-    return "Bunu geliştiriyorum 🔥"
-
-# =========================
-# MAIN AI
-# =========================
-def ai_reply(msg, user):
-
-    text = msg.lower().strip()
-
-    remember(user, msg)
-
-    # Görsel
-    if any(k in text for k in [
-        "çiz", "logo", "afiş",
-        "wallpaper", "görsel",
-        "resim"
-    ]):
-        user["last_topic"] = "image"
-        return image_ai(msg)
-
-    # Kod
-    if any(k in text for k in [
-        "kod", "python", "html",
-        "css", "js", "site",
-        "uygulama", "hesap"
-    ]):
-        user["last_topic"] = "code"
-
-        return {
-            "type": "code",
-            "reply": coder_ai(msg)
-        }
-
-    # Wiki
-    if any(k in text for k in [
-        "nedir", "kimdir",
-        "nerede", "nasıl"
-    ]):
-        q = text.replace("nedir", "") \
-                .replace("kimdir", "") \
-                .replace("nerede", "") \
-                .replace("nasıl", "") \
-                .strip()
-
-        return {
-            "type": "text",
-            "reply": wiki_ai(q)
-        }
-
-    return {
-        "type": "text",
-        "reply": chat_ai(msg)
-    }
-
-# =========================
-# SERVER
-# =========================
 class Handler(BaseHTTPRequestHandler):
 
     def send_json(self, code, data):
-
-        body = json.dumps(
-            data,
-            ensure_ascii=False
-        ).encode("utf-8")
+        body = json.dumps(data).encode("utf-8")
 
         self.send_response(code)
-        self.send_header(
-            "Content-Type",
-            "application/json; charset=utf-8"
-        )
+        self.send_header("Content-Type", "application/json")
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Headers", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
-        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Access-Control-Allow-Methods", "*")
         self.end_headers()
+
         self.wfile.write(body)
 
     def do_OPTIONS(self):
         self.send_response(204)
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Headers", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
+        self.send_header("Access-Control-Allow-Methods", "*")
         self.end_headers()
 
     def do_GET(self):
-
         if self.path == "/":
-            self.send_json(200, {
-                "status": "V11 ACTIVE 🔥"
-            })
-            return
+            self.send_json(200, {"status": "API çalışıyor 🚀"})
 
-        if self.path == "/api/create-key":
+        elif self.path == "/api/create-key":
+            key = create_api_key()
+            self.send_json(200, {"api_key": key})
 
-            key = create_key("web_user")
-
-            self.send_json(200, {
-                "api_key": key
-            })
-            return
-
-        if self.path == "/image.png":
-            try:
-                with open("image.png", "rb") as f:
-                    data = f.read()
-
-                self.send_response(200)
-                self.send_header("Content-Type", "image/png")
-                self.send_header("Content-Length", str(len(data)))
-                self.end_headers()
-                self.wfile.write(data)
-                return
-            except:
-                pass
-
-        self.send_json(404, {
-            "error": "not found"
-        })
+        else:
+            self.send_json(404, {"error": "not found"})
 
     def do_POST(self):
 
+        # 🔐 AUTH HEADER AL
         auth = self.headers.get("Authorization")
 
-        if not auth or not auth.startswith("Bearer "):
-            self.send_json(401, {
-                "error": "API key gerekli"
-            })
+        if auth and auth.startswith("Bearer "):
+            api_key = auth.split(" ")[1]
+        else:
+            # 🔥 KEY YOKSA OTOMATİK OLUŞTUR
+            api_key = str(uuid.uuid4())
+
+        # 🔥 SELF HEALING CHECK
+        user = check_api_key(api_key)
+
+        # RATE LIMIT
+        if user["usage"] >= RATE_LIMIT:
+            self.send_json(429, {"error": "rate limit"})
             return
 
-        key = auth.split(" ")[1]
+        increment_usage(api_key)
 
-        user = get_user(key)
+        # BODY OKU
+        length = int(self.headers.get("Content-Length", 0))
+        body = self.rfile.read(length)
 
-        if not user:
-            self.send_json(403, {
-                "error": "Geçersiz key"
-            })
+        try:
+            data = json.loads(body.decode("utf-8"))
+        except:
+            self.send_json(400, {"error": "bad json"})
             return
 
-        if user["usage"] >= LIMIT:
-            self.send_json(429, {
-                "error": "Limit doldu"
-            })
-            return
-
-        user["usage"] += 1
-
+        # CHAT
         if self.path == "/api/chat":
+            message = data.get("message", "")
+            reply = generate_reply(message)
 
-            length = int(
-                self.headers.get(
-                    "Content-Length", 0
-                )
-            )
-
-            raw = self.rfile.read(length)
-
-            try:
-                data = json.loads(
-                    raw.decode("utf-8")
-                )
-                msg = data.get(
-                    "message", ""
-                )
-            except:
-                msg = ""
-
-            result = ai_reply(msg, user)
-
-            save_user(key, user)
-
-            self.send_json(200, result)
+            self.send_json(200, {
+                "reply": reply,
+                "api_key": api_key  # 🔥 FRONTEND'E GERİ VER
+            })
             return
 
-        self.send_json(404, {
-            "error": "not found"
-        })
+        self.send_json(404, {"error": "not found"})
 
-# =========================
-# RUN
-# =========================
+# ================== RUN ==================
+
 def run():
-
-    server = ThreadingHTTPServer(
-        ("0.0.0.0", PORT),
-        Handler
-    )
-
-    print("V11 ACTIVE 🔥")
+    server = ThreadingHTTPServer(("0.0.0.0", 8000), Handler)
+    print("🚀 Server çalışıyor")
     server.serve_forever()
 
 if __name__ == "__main__":
