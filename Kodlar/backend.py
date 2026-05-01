@@ -81,6 +81,7 @@ def internet_search(query):
 
 def generate_image(prompt):
     API_URL = "https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5"
+
     headers = {
         "Authorization": "Bearer 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"
     }
@@ -93,9 +94,10 @@ def generate_image(prompt):
         )
 
         print("STATUS:", response.status_code)
+        print("TYPE:", response.headers.get("content-type"))
 
         if response.status_code == 503:
-            return "⏳ Model yükleniyor, tekrar dene."
+            return "⏳ Model yükleniyor..."
 
         if "application/json" in response.headers.get("content-type", ""):
             print("HATA:", response.text)
