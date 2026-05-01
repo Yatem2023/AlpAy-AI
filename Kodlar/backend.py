@@ -83,7 +83,7 @@ def generate_image(prompt):
     API_URL = "https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5"
 
     headers = {
-        "Authorization": "Bearer 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"
+        "Authorization": "Bearer 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"
     }
 
     try:
