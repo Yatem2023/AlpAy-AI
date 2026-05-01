@@ -174,17 +174,22 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
-        if self.path == "/":
-            self.send_json(200, {"status": "AI çalışıyor 🚀"})
-        else:
-            self.send_json(404, {"error": "not found"})
-        if self.path == "/image.png":
+    if self.path == "/":
+        self.send_json(200, {"status": "AI çalışıyor 🚀"})
+        return
+
+    if self.path == "/image.png":
+        try:
             with open("image.png", "rb") as f:
                 self.send_response(200)
                 self.send_header("Content-type", "image/png")
                 self.end_headers()
                 self.wfile.write(f.read())
-            return
+        except:
+            self.send_json(404, {"error": "no image"})
+        return
+
+    self.send_json(404, {"error": "not found"})
 
     def do_POST(self):
 
