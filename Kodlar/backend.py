@@ -193,6 +193,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json(404, {"error": "not found"})
 
     def do_POST(self):
+    try:
         auth = self.headers.get("Authorization")
 
         if auth and auth.startswith("Bearer "):
@@ -211,11 +212,7 @@ class Handler(BaseHTTPRequestHandler):
         length = int(self.headers.get("Content-Length", 0))
         body = self.rfile.read(length)
 
-        try:
-            data = json.loads(body.decode("utf-8"))
-        except:
-            self.send_json(400, {"error": "json"})
-            return
+        data = json.loads(body.decode("utf-8"))
 
         if self.path == "/api/chat":
             msg = data.get("message", "")
@@ -229,6 +226,9 @@ class Handler(BaseHTTPRequestHandler):
 
         self.send_json(404, {"error": "not found"})
 
+    except Exception as e:
+        print("🔥 HATA:", str(e))  # Render logda görürsün
+        self.send_json(500, {"error": str(e)})
 
 # ================= RUN =================
 
@@ -237,6 +237,9 @@ def run():
     server = ThreadingHTTPServer(("0.0.0.0", port), Handler)
     print(f"🚀 AI hazır | Port: {port}")
     server.serve_forever()
+    
+print("MESAJ:", msg)
+print("CEVAP:", reply)
 
 
 if __name__ == "__main__":
