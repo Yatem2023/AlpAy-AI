@@ -4,6 +4,7 @@ import uuid
 import os
 import requests
 import datetime
+import math
 from knowledge import search_knowledge
 API_KEYS_FILE = "api_keys.json"
 RATE_LIMIT = 200
@@ -31,6 +32,21 @@ def increment_usage(api_key):
         data[api_key]["usage"] += 1
         save_api_keys(data)
 # ================= AI =================
+def calculate(expr):
+    try:
+        # güvenli eval
+        allowed = {
+            "__builtins__": None,
+            "sqrt": math.sqrt,
+            "pow": pow,
+            "abs": abs,
+            "round": round
+        }
+        result = eval(expr, allowed)
+        return str(result)
+    except:
+        return None
+
 def generate_code(prompt):
     text = prompt.lower()
     if "hesap" in text:
@@ -65,33 +81,37 @@ def internet_search(query):
 # 🔥 ANA AI (EN ÖNEMLİ YER)
 def generate_reply(message):
     msg = message.lower()
-    # selam
-    if "merhaba" in msg:
-        return "Merhaba 😎"
-    # saat
-    if "saat" in msg:
-        return str(datetime.datetime.now())
-    # kod
-    # kod / site / program
-    if any(x in msg for x in ["kod", "yaz", "site", "program", "uygulama"]):
-        code = generate_code(message)
-        if code:
-            return code
-    # wiki soruları (ZORUNLU)
+
+    # 💬 sohbet
+    chat = chat_reply(msg)
+    if chat:
+        return chat
+
+    # 🧮 matematik
+    import re
+    if re.match(r"^[0-9\.\+\-\*\/\(\) ]+$", msg):
+        calc = calculate(msg)
+        if calc:
+            return "Sonuç: " + calc
+
+    # 💻 kod
+    if any(x in msg for x in ["kod", "yaz", "site", "program"]):
+        return generate_code(message)
+
+    # 📚 wiki
     if any(x in msg for x in ["nedir", "kimdir", "ne"]):
         clean = msg.replace("nedir","").replace("kimdir","").replace("ne","").strip()
         wiki = search_knowledge(clean)
         if wiki:
             return wiki
-    # internet
+
+    # 🌐 internet
     net = internet_search(msg)
     if net:
         return net
-    # 🔥 SON ÇARE (HER ZAMAN CEVAP)
-    wiki = search_knowledge(msg)
-    if wiki:
-        return wiki
-    return "Bilmiyorum ama öğreniyorum 😎"
+
+    # 🧠 fallback
+    return "Bunu öğreniyorum 😎"
 # ================= SERVER =================
 class Handler(BaseHTTPRequestHandler):
     def send_json(self, code, data):
