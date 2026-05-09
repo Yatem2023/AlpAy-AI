@@ -227,9 +227,8 @@ class Handler(BaseHTTPRequestHandler):
         self.send_json(404, {"error": "not found"})
 
     except Exception as e:
-        print("🔥 HATA:", str(e))  # Render logda görürsün
+        print("🔥 HATA:", str(e))
         self.send_json(500, {"error": str(e)})
-
 # ================= RUN =================
 
 def run():
