@@ -4,15 +4,14 @@ import uuid
 import os
 import requests
 import datetime
-import math
-
+import random
+import re
 from knowledge import search_knowledge
 
 API_KEYS_FILE = "api_keys.json"
 RATE_LIMIT = 200
 
 # ================= API =================
-
 def load_api_keys():
     if not os.path.exists(API_KEYS_FILE):
         return {}
@@ -41,94 +40,135 @@ def increment_usage(api_key):
 
 # ================= AI =================
 
-def safe_eval(expr):
+# 🔥 basit matematik çözücü
+def solve_math(text):
     try:
-        allowed = {
-            "sqrt": math.sqrt,
-            "pow": pow,
-            "abs": abs,
-            "round": round
-        }
-        return str(eval(expr, {"__builtins__": None}, allowed))
+        clean = re.sub(r"[^0-9\+\-\*\/\.\(\)]", "", text)
+        if clean:
+            result = eval(clean)
+            return f"Sonuç: {result}"
     except:
         return None
 
+# 🔥 küçük sohbet cevapları
+def casual_reply(msg):
+    responses = {
+        "nasılsın": [
+            "İyiyim 😎 sen nasılsın?",
+            "Gayet iyiyim, sen?",
+        ],
+        "selam": [
+            "Selam 😎",
+            "Naber 👀"
+        ],
+        "merhaba": [
+            "Merhaba 😎",
+            "Hoş geldin!"
+        ],
+        "ne yapıyorsun": [
+            "Seninle sohbet ediyorum 😎",
+            "Kod + sohbet mode aktif 🔥"
+        ],
+        "teşekkür": [
+            "Rica ederim 😎",
+            "Ne demek!"
+        ],
+        "adın ne": [
+            "Ben AlpAy AI 😎"
+        ]
+    }
+
+    for key in responses:
+        if key in msg:
+            return random.choice(responses[key])
+    return None
+
+# 🔥 internet
+def internet_search(query):
+    try:
+        url = f"https://api.duckduckgo.com/?q={query}&format=json"
+        data = requests.get(url).json()
+        return data.get("AbstractText", None)
+    except:
+        return None
+
+# 🔥 kod üretici
 def generate_code(prompt):
     text = prompt.lower()
 
-    if "hesap makinesi" in text:
-        return """# Hesap Makinesi
-a = float(input("Sayı1: "))
-op = input("İşlem (+ - * /): ")
-b = float(input("Sayı2: "))
+    if "hesap" in text:
+        return """```python
+def hesapla():
+    a = float(input("Sayı1: "))
+    op = input("İşlem (+ - * /): ")
+    b = float(input("Sayı2: "))
+    if op == "+": print(a + b)
+    elif op == "-": print(a - b)
+    elif op == "*": print(a * b)
+    elif op == "/": print(a / b)
 
-if op == "+": print(a + b)
-elif op == "-": print(a - b)
-elif op == "*": print(a * b)
-elif op == "/": print(a / b)
-"""
+hesapla()
+```"""
 
     if "site" in text:
-        return """<!DOCTYPE html>
+        return """```html
+<!DOCTYPE html>
 <html>
 <head><title>Site</title></head>
 <body>
 <h1>Merhaba Dünya</h1>
 </body>
-</html>"""
+</html>
+```"""
 
     return None
 
-def internet_search(query):
-    try:
-        url = f"https://api.duckduckgo.com/?q={query}&format=json"
-        data = requests.get(url).json()
-        return data.get("AbstractText")
-    except:
-        return None
-
+# 🔥 ANA AI
 def generate_reply(message):
     msg = message.lower().strip()
 
-    print("📩 MESAJ:", msg)
-
-    # SELAM
-    if any(x in msg for x in ["merhaba", "selam", "hey"]):
-        return "Merhaba 😎 Nasılsın?"
-
-    # SAAT
+    # saat
     if "saat" in msg:
         return str(datetime.datetime.now())
 
-    # MATEMATİK
-    math_result = safe_eval(msg)
+    # matematik
+    math_result = solve_math(msg)
     if math_result:
-        return f"Sonuç: {math_result}"
+        return math_result
 
-    # KOD
+    # günlük sohbet
+    casual = casual_reply(msg)
+    if casual:
+        return casual
+
+    # kod üret
     if any(x in msg for x in ["kod", "yaz", "site", "program"]):
         code = generate_code(msg)
         if code:
             return code
 
-    # WIKI
+    # wiki
     if any(x in msg for x in ["nedir", "kimdir", "ne"]):
         clean = msg.replace("nedir", "").replace("kimdir", "").replace("ne", "").strip()
         wiki = search_knowledge(clean)
         if wiki:
             return wiki
 
-    # İNTERNET
+    # internet
     net = internet_search(msg)
     if net:
         return net
 
-    # SON ÇARE
+    # fallback
     wiki = search_knowledge(msg)
     if wiki:
         return wiki
 
-    return "Bilmiyorum ama öğreniyorum 😎"
+    return random.choice([
+        "Bunu tam bilmiyorum ama öğreniyorum 😎",
+        "İlginç bir soru 🤔",
+        "Bunu araştırıyorum 🔍"
+    ])
 
 # ================= SERVER =================
 
@@ -158,52 +198,48 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json(404, {"error": "not found"})
 
     def do_POST(self):
+        auth = self.headers.get("Authorization")
+
+        if auth and auth.startswith("Bearer "):
+            api_key = auth.split(" ")[1]
+        else:
+            api_key = str(uuid.uuid4())
+
+        user = check_api_key(api_key)
+
+        if user["usage"] >= RATE_LIMIT:
+            self.send_json(429, {"error": "limit"})
+            return
+
+        increment_usage(api_key)
+
+        length = int(self.headers.get("Content-Length", 0))
+        body = self.rfile.read(length)
+
         try:
-            auth = self.headers.get("Authorization")
-
-            if auth and auth.startswith("Bearer "):
-                api_key = auth.split(" ")[1]
-            else:
-                api_key = str(uuid.uuid4())
-
-            user = check_api_key(api_key)
-
-            if user["usage"] >= RATE_LIMIT:
-                self.send_json(429, {"error": "limit"})
-                return
-
-            increment_usage(api_key)
-
-            length = int(self.headers.get("Content-Length", 0))
-            body = self.rfile.read(length)
-
             data = json.loads(body.decode("utf-8"))
+        except:
+            self.send_json(400, {"error": "json"})
+            return
 
-            if self.path == "/api/chat":
-                msg = data.get("message", "")
+        if self.path == "/api/chat":
+            msg = data.get("message", "")
+            reply = generate_reply(msg)
 
-                reply = generate_reply(msg)
+            self.send_json(200, {
+                "reply": reply,
+                "key": api_key
+            })
+            return
 
-                print("🤖 CEVAP:", reply)
-
-                self.send_json(200, {
-                    "reply": reply,
-                    "key": api_key
-                })
-                return
-
-            self.send_json(404, {"error": "not found"})
-
-        except Exception as e:
-            print("🔥 HATA:", str(e))
-            self.send_json(500, {"error": str(e)})
+        self.send_json(404, {"error": "not found"})
 
 # ================= RUN =================
 
 def run():
-    port = int(os.environ.get("PORT", 8000))  # 🔥 Render fix
+    port = int(os.environ.get("PORT", 8000))
     server = ThreadingHTTPServer(("0.0.0.0", port), Handler)
-    print(f"🚀 AI hazır port:{port}")
+    print(f"🚀 AI hazır: {port}")
     server.serve_forever()
 
 if __name__ == "__main__":
