@@ -2,176 +2,73 @@ import json
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import uuid
 import os
-import requests
 import datetime
-import random
-import re
-from knowledge import search_knowledge
 
 API_KEYS_FILE = "api_keys.json"
-RATE_LIMIT = 200
+RATE_LIMIT = 100
 
-# ================= API =================
-def load_api_keys():
+# ================= DB =================
+def load_db():
     if not os.path.exists(API_KEYS_FILE):
         return {}
     with open(API_KEYS_FILE, "r", encoding="utf-8") as f:
         return json.load(f)
 
-def save_api_keys(data):
+def save_db(data):
     with open(API_KEYS_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
 
-def check_api_key(api_key):
-    data = load_api_keys()
-    if api_key not in data:
-        data[api_key] = {
-            "user": "auto",
-            "usage": 0
-        }
-        save_api_keys(data)
-    return data[api_key]
+# ================= USER =================
+def get_user_id(handler):
+    ip = handler.client_address[0]
 
-def increment_usage(api_key):
-    data = load_api_keys()
-    if api_key in data:
-        data[api_key]["usage"] += 1
-        save_api_keys(data)
+    auth = handler.headers.get("Authorization")
+    if auth and auth.startswith("Bearer "):
+        key = auth.split(" ")[1]
+    else:
+        key = "anon"
+
+    return f"{key}_{ip}"
+
+def check_user(user_id):
+    data = load_db()
+    today = str(datetime.date.today())
+
+    if user_id not in data:
+        data[user_id] = {
+            "usage": 0,
+            "date": today
+        }
+
+    # 🔥 günlük reset
+    if data[user_id]["date"] != today:
+        data[user_id]["usage"] = 0
+        data[user_id]["date"] = today
+
+    save_db(data)
+    return data[user_id]
+
+def increment(user_id):
+    data = load_db()
+    data[user_id]["usage"] += 1
+    save_db(data)
 
 # ================= AI =================
+def generate_reply(msg):
+    msg = msg.lower()
 
-# 🔥 basit matematik çözücü
-def solve_math(text):
-    try:
-        clean = re.sub(r"[^0-9\+\-\*\/\.\(\)]", "", text)
-        if clean:
-            result = eval(clean)
-            return f"Sonuç: {result}"
-    except:
-        return None
+    if "merhaba" in msg:
+        return "Merhaba 😎"
 
-# 🔥 küçük sohbet cevapları
-def casual_reply(msg):
-    responses = {
-        "nasılsın": [
-            "İyiyim 😎 sen nasılsın?",
-            "Gayet iyiyim, sen?",
-        ],
-        "selam": [
-            "Selam 😎",
-            "Naber 👀"
-        ],
-        "merhaba": [
-            "Merhaba 😎",
-            "Hoş geldin!"
-        ],
-        "ne yapıyorsun": [
-            "Seninle sohbet ediyorum 😎",
-            "Kod + sohbet mode aktif 🔥"
-        ],
-        "teşekkür": [
-            "Rica ederim 😎",
-            "Ne demek!"
-        ],
-        "adın ne": [
-            "Ben AlpAy AI 😎"
-        ]
-    }
+    if "nasılsın" in msg:
+        return "İyiyim 😎 sen nasılsın?"
 
-    for key in responses:
-        if key in msg:
-            return random.choice(responses[key])
-    return None
+    if "2+2" in msg:
+        return "Sonuç: 4"
 
-# 🔥 internet
-def internet_search(query):
-    try:
-        url = f"https://api.duckduckgo.com/?q={query}&format=json"
-        data = requests.get(url).json()
-        return data.get("AbstractText", None)
-    except:
-        return None
-
-# 🔥 kod üretici
-def generate_code(prompt):
-    text = prompt.lower()
-
-    if "hesap" in text:
-        return """```python
-def hesapla():
-    a = float(input("Sayı1: "))
-    op = input("İşlem (+ - * /): ")
-    b = float(input("Sayı2: "))
-    if op == "+": print(a + b)
-    elif op == "-": print(a - b)
-    elif op == "*": print(a * b)
-    elif op == "/": print(a / b)
-
-hesapla()
-```"""
-
-    if "site" in text:
-        return """```html
-<!DOCTYPE html>
-<html>
-<head><title>Site</title></head>
-<body>
-<h1>Merhaba Dünya</h1>
-</body>
-</html>
-```"""
-
-    return None
-
-# 🔥 ANA AI
-def generate_reply(message):
-    msg = message.lower().strip()
-
-    # saat
-    if "saat" in msg:
-        return str(datetime.datetime.now())
-
-    # matematik
-    math_result = solve_math(msg)
-    if math_result:
-        return math_result
-
-    # günlük sohbet
-    casual = casual_reply(msg)
-    if casual:
-        return casual
-
-    # kod üret
-    if any(x in msg for x in ["kod", "yaz", "site", "program"]):
-        code = generate_code(msg)
-        if code:
-            return code
-
-    # wiki
-    if any(x in msg for x in ["nedir", "kimdir", "ne"]):
-        clean = msg.replace("nedir", "").replace("kimdir", "").replace("ne", "").strip()
-        wiki = search_knowledge(clean)
-        if wiki:
-            return wiki
-
-    # internet
-    net = internet_search(msg)
-    if net:
-        return net
-
-    # fallback
-    wiki = search_knowledge(msg)
-    if wiki:
-        return wiki
-
-    return random.choice([
-        "Bunu tam bilmiyorum ama öğreniyorum 😎",
-        "İlginç bir soru 🤔",
-        "Bunu araştırıyorum 🔍"
-    ])
+    return "Bunu geliştiriyorum 😎"
 
 # ================= SERVER =================
-
 class Handler(BaseHTTPRequestHandler):
 
     def send_json(self, code, data):
@@ -198,20 +95,14 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json(404, {"error": "not found"})
 
     def do_POST(self):
-        auth = self.headers.get("Authorization")
-
-        if auth and auth.startswith("Bearer "):
-            api_key = auth.split(" ")[1]
-        else:
-            api_key = str(uuid.uuid4())
-
-        user = check_api_key(api_key)
+        user_id = get_user_id(self)
+        user = check_user(user_id)
 
         if user["usage"] >= RATE_LIMIT:
-            self.send_json(429, {"error": "limit"})
+            self.send_json(429, {"error": "limit doldu"})
             return
 
-        increment_usage(api_key)
+        increment(user_id)
 
         length = int(self.headers.get("Content-Length", 0))
         body = self.rfile.read(length)
@@ -227,19 +118,17 @@ class Handler(BaseHTTPRequestHandler):
             reply = generate_reply(msg)
 
             self.send_json(200, {
-                "reply": reply,
-                "key": api_key
+                "reply": reply
             })
             return
 
         self.send_json(404, {"error": "not found"})
 
 # ================= RUN =================
-
 def run():
     port = int(os.environ.get("PORT", 8000))
     server = ThreadingHTTPServer(("0.0.0.0", port), Handler)
-    print(f"🚀 AI hazır: {port}")
+    print(f"🚀 çalışıyor: {port}")
     server.serve_forever()
 
 if __name__ == "__main__":
