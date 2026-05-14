@@ -5,7 +5,7 @@ import os
 import datetime
 
 API_KEYS_FILE = "api_keys.json"
-RATE_LIMIT = 100
+RATE_LIMIT = 10000000
 
 # ================= DB =================
 def load_db():
