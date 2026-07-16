@@ -1,118 +1,92 @@
 """
-AlpAy Engine Dataset
-Version: 0.1
+AlpAy Engine
+Dataset
+Version: 1.0
 """
+
+from pathlib import Path
+
+import torch
+from torch.utils.data import Dataset
 
 from tokenizer import Tokenizer
 from vocabulary import Vocabulary
 
 
-class TextDataset:
+class TextDataset(Dataset):
 
     def __init__(
         self,
-        file_path: str,
-        context_length: int = 32,
-        min_freq: int = 1
+        context_length=64,
+        min_freq=1,
+        dataset_name="tr.txt"
     ):
 
-        self.file_path = file_path
         self.context_length = context_length
 
-        self.tokenizer = Tokenizer()
-        self.vocab = Vocabulary()
+        # backend klasörü
+        backend_dir = Path(__file__).resolve().parent.parent
 
-        self.tokens = []
-        self.encoded = []
+        # dataset yolu
+        dataset_path = backend_dir / "datasets" / dataset_name
 
-        self.inputs = []
-        self.targets = []
-
-        self.load(min_freq)
-
-    def load(self, min_freq):
+        if not dataset_path.exists():
+            raise FileNotFoundError(
+                f"Dataset bulunamadı:\n{dataset_path}"
+            )
 
         with open(
-            self.file_path,
+            dataset_path,
             "r",
             encoding="utf-8"
         ) as f:
-
             text = f.read()
 
+        self.tokenizer = Tokenizer()
+
         self.tokens = self.tokenizer.tokenize(text)
+
+        self.vocab = Vocabulary()
 
         self.vocab.build(
             [self.tokens],
             min_freq=min_freq
         )
 
-        self.encoded = self.vocab.encode(self.tokens)
+        self.ids = self.vocab.encode(
+            self.tokens
+        )
 
-        self.create_sequences()
-
-    def create_sequences(self):
-
-        self.inputs = []
-        self.targets = []
-
-        length = len(self.encoded)
-
-        if length <= self.context_length:
-            return
-
-        for i in range(length - self.context_length):
-
-            x = self.encoded[
-                i:i + self.context_length
-            ]
-
-            y = self.encoded[
-                i + 1:i + self.context_length + 1
-            ]
-
-            self.inputs.append(x)
-            self.targets.append(y)
+        print(f"📖 Dataset yüklendi")
+        print(f"Toplam token : {len(self.tokens)}")
+        print(f"Vocabulary : {len(self.vocab.token_to_id)}")
 
     def __len__(self):
 
-        return len(self.inputs)
-
-    def __getitem__(self, index):
-
-        return (
-            self.inputs[index],
-            self.targets[index]
+        return max(
+            0,
+            len(self.ids) - self.context_length
         )
 
+    def __getitem__(self, idx):
 
-if __name__ == "__main__":
+        x = self.ids[
+            idx:
+            idx + self.context_length
+        ]
 
-    dataset = TextDataset(
-        "../datasets/tr.txt",
-        context_length=8
-    )
+        y = self.ids[
+            idx + 1:
+            idx + self.context_length + 1
+        ]
 
-    print("Toplam örnek:", len(dataset))
-
-    x, y = dataset[0]
-
-    print()
-
-    print("INPUT")
-    print(x)
-
-    print()
-
-    print("TARGET")
-    print(y)
-
-    print()
-
-    print(
-        dataset.vocab.decode(x)
-    )
-
-    print(
-        dataset.vocab.decode(y)
-    )
+        return (
+            torch.tensor(
+                x,
+                dtype=torch.long
+            ),
+            torch.tensor(
+                y,
+                dtype=torch.long
+            )
+        )

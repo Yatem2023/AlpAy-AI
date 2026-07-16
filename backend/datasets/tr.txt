@@ -1,0 +1,8 @@
+Merhaba AlpAy.
+Ben küçük bir yapay zeka modeliyim.
+Python yazılım geliştirme için kullanılan güçlü bir dildir.
+Makine öğrenmesi veri ile öğrenir.
+Transformer modelleri dikkat mekanizması kullanır.
+AlpAy gelecekte gelişmiş bir asistan olacak.
+Bugün yeni şeyler öğreniyorum.
+Yapay zeka teknolojileri hızla gelişiyor.
